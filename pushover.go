@@ -115,12 +115,11 @@ type Request struct {
 
 // Response represents a response from the API
 type Response struct {
-	Status         int    `json:"status"`
-	ID             string `json:"request"`
-	Errors         Errors `json:"errors,omitempty"`
-	Receipt        string `json:"receipt,omitempty"`
-	ReceiptDetails *ReceiptDetails
-	Limit          *Limit
+	Status  int    `json:"status"`
+	ID      string `json:"request"`
+	Errors  Errors `json:"errors"`
+	Receipt string `json:"receipt"`
+	Limit   *Limit
 }
 
 // Limit represents the limitation of the application. This information is
@@ -130,8 +129,11 @@ type Response struct {
 // 		X-Limit-App-Remaining: 7496
 // 		X-Limit-App-Reset: 1393653600
 type Limit struct {
-	Total     int
+	// Total number of messages you can send during a month
+	Total int
+	// Remaining number of messages you can send until the next reset
 	Remaining int
+	// NextReset is the time when all the app counters will be reseted
 	NextReset time.Time
 }
 

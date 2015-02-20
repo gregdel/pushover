@@ -4,7 +4,10 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"testing"
 	"time"
@@ -391,6 +394,42 @@ func TestUnmarshalReceiptDetails(t *testing.T) {
 
 	if reflect.DeepEqual(details, expected) == false {
 		t.Errorf("ReceiptDetails should be Unmarshaled properly")
+	}
+}
+
+// TestAppLimitsFromHeaders
+func TestAppLimitsFromHeaders(t *testing.T) {
+	// Fake server with the right headers
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Limit-App-Limit", "7500")
+		w.Header().Set("X-Limit-App-Remaining", "6000")
+		w.Header().Set("X-Limit-App-Reset", "1393653600")
+		fmt.Fprintln(w, "fake response")
+	}))
+	defer ts.Close()
+
+	// Fake get
+	resp, err := http.Get(ts.URL)
+	if err != nil {
+		t.Errorf("Error getting fake URL while testing app limit headers")
+	}
+	defer resp.Body.Close()
+
+	// Get limit from headers
+	appLimits, err := newLimit(resp.Header)
+	if err != nil {
+		t.Errorf("Error getting a newLimit from headers")
+	}
+
+	// Expected result
+	expected := &Limit{
+		Total:     7500,
+		Remaining: 6000,
+		NextReset: time.Unix(int64(1393653600), 0),
+	}
+
+	if reflect.DeepEqual(appLimits, expected) == false {
+		t.Errorf("App limits not properly set")
 	}
 }
 
