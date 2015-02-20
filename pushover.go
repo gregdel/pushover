@@ -2,6 +2,7 @@
 package pushover
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -420,16 +421,16 @@ func (p *Pushover) encodeRequest(message *Message, recipient *Recipient) (*url.V
 
 // ReceiptDetails represents the receipt informations in case of emergency priority
 type ReceiptDetails struct {
-	Status          int    `json:"status"`
-	Acknowledged    int    `json:"acknowledged"`
-	AcknowledgedAt  int64  `json:"acknowledged_at,omitempty"`
-	AcknowledgedBy  string `json:"acknowledged_by"`
-	LastDeliveredAt int64  `json:"last_delivered_at"`
-	Expired         int    `json:"expired"`
-	ExpiresAt       int64  `json:"expires_at"`
-	CalledBack      int    `json:"called_back"`
-	CalledBackAt    int64  `json:"called_back_at"`
-	RequestID       string `json:"request"`
+	Status          int
+	Acknowledged    bool
+	AcknowledgedBy  string
+	Expired         bool
+	CalledBack      bool
+	ID              string
+	AcknowledgedAt  *time.Time
+	LastDeliveredAt *time.Time
+	ExpiresAt       *time.Time
+	CalledBackAt    *time.Time
 }
 
 // GetReceiptDetails return detailed informations about a receipt. This is used
@@ -462,6 +463,81 @@ func (p *Pushover) GetReceiptDetails(receipt string) (*ReceiptDetails, error) {
 	}
 
 	return details, nil
+}
+
+// UnmarshalJSON is a custom unmarshal function to handle timestamps and
+// boolean as int and convert them to the right type
+func (r *ReceiptDetails) UnmarshalJSON(data []byte) error {
+	dataBytes := bytes.NewReader(data)
+	var aux struct {
+		ID              string     `json:"request"`
+		Status          int        `json:"status"`
+		Acknowledged    intBool    `json:"acknowledged"`
+		AcknowledgedBy  string     `json:"acknowledged_by"`
+		Expired         intBool    `json:"expired"`
+		CalledBack      intBool    `json:"called_back"`
+		AcknowledgedAt  *timestamp `json:"acknowledged_at"`
+		LastDeliveredAt *timestamp `json:"last_delivered_at"`
+		ExpiresAt       *timestamp `json:"expires_at"`
+		CalledBackAt    *timestamp `json:"called_back_at"`
+	}
+
+	// Decode json into the aux struct
+	if err := json.NewDecoder(dataBytes).Decode(&aux); err != nil {
+		return err
+	}
+
+	// Set the RecipientDetails with the right types
+	r.Status = aux.Status
+	r.Acknowledged = bool(aux.Acknowledged)
+	r.AcknowledgedBy = aux.AcknowledgedBy
+	r.Expired = bool(aux.Expired)
+	r.CalledBack = bool(aux.CalledBack)
+	r.ID = aux.ID
+	r.AcknowledgedAt = aux.AcknowledgedAt.Time
+	r.LastDeliveredAt = aux.LastDeliveredAt.Time
+	r.ExpiresAt = aux.ExpiresAt.Time
+	r.CalledBackAt = aux.CalledBackAt.Time
+
+	return nil
+}
+
+// Helper to unmarshal a timestamp as string to a time.Time
+type timestamp struct{ *time.Time }
+
+func (t *timestamp) UnmarshalJSON(data []byte) error {
+	var i int64
+	if err := json.Unmarshal(data, &i); err != nil {
+		return err
+	}
+
+	if i > 0 {
+		unixTime := time.Unix(i, 0)
+		*t = timestamp{&unixTime}
+	}
+
+	return nil
+}
+
+// Helper to unmarshal a int as a boolean
+type intBool bool
+
+func (i *intBool) UnmarshalJSON(data []byte) error {
+	var v int64
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+
+	switch v {
+	case 0:
+		*i = false
+	case 1:
+		*i = true
+	default:
+		return fmt.Errorf("Failed to unmarshal int to bool")
+	}
+
+	return nil
 }
 
 // RecipientDetails represents the receipt informations in case of emergency priority

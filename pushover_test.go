@@ -3,7 +3,9 @@ package pushover
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"log"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -342,6 +344,53 @@ func TestEmptyReceipt(t *testing.T) {
 
 	if err != ErrEmptyReceipt {
 		t.Errorf("Should get an ErrEmptyReceipt")
+	}
+}
+
+// TestUnmarshalReceiptDetails
+func TestUnmarshalReceiptDetails(t *testing.T) {
+	body := []byte(`
+	{
+		"status": 1,
+		"acknowledged": 1,
+		"acknowledged_at": 1424305421,
+		"acknowledged_by": "uYWtrQ4scpDU38cz5X5pvxNvu7b15",
+		"last_delivered_at": 1424305379,
+		"expired": 1,
+		"expires_at": 1424308979,
+		"called_back": 0,
+		"called_back_at": 0,
+		"request": "e95f35c2d75a100a3719b3764f0c8e47"
+	}
+	`)
+
+	// Expected times from timestamp
+	acknowledgedAt := time.Unix(int64(1424305421), 0)
+	lastDeliveredAt := time.Unix(int64(1424305379), 0)
+	expiresAt := time.Unix(int64(1424308979), 0)
+
+	// Expected result
+	expected := &ReceiptDetails{
+		Status:          1,
+		Acknowledged:    true,
+		AcknowledgedAt:  &acknowledgedAt,
+		AcknowledgedBy:  "uYWtrQ4scpDU38cz5X5pvxNvu7b15",
+		LastDeliveredAt: &lastDeliveredAt,
+		Expired:         true,
+		ExpiresAt:       &expiresAt,
+		CalledBack:      false,
+		CalledBackAt:    nil,
+		ID:              "e95f35c2d75a100a3719b3764f0c8e47",
+	}
+
+	var details *ReceiptDetails
+	err := json.Unmarshal(body, &details)
+	if err != nil {
+		t.Errorf("Should not get an error while during the Unmarshal process : %s\n", err)
+	}
+
+	if reflect.DeepEqual(details, expected) == false {
+		t.Errorf("ReceiptDetails should be Unmarshaled properly")
 	}
 }
 
