@@ -406,6 +406,10 @@ func (p *Pushover) encodeRequest(message *Message, recipient *Recipient) (*url.V
 		urlValues.Add("sound", message.Sound)
 	}
 
+	if message.DeviceName != "" {
+		urlValues.Add("device", message.DeviceName)
+	}
+
 	if message.Timestamp != 0 {
 		urlValues.Add("timestamp", strconv.FormatInt(message.Timestamp, 10))
 	}

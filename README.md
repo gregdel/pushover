@@ -66,7 +66,7 @@ message := &pushover.Message{
     Retry:       60 * time.Second,
     Expire:      time.Hour,
     DeviceName:  "SuperDevice",
-    CallbackURL: "http://youapp.com/callback",
+    CallbackURL: "http://yourapp.com/callback",
     Sound:       pushover.SoundCosmic,
 }
 ```

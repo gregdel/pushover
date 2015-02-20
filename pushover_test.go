@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"reflect"
 	"testing"
 	"time"
@@ -430,6 +431,66 @@ func TestAppLimitsFromHeaders(t *testing.T) {
 
 	if reflect.DeepEqual(appLimits, expected) == false {
 		t.Errorf("App limits not properly set")
+	}
+}
+
+// TestNewMessageWithTitle
+func TestNewMessageWithTitle(t *testing.T) {
+	message := NewMessageWithTitle("World", "Hello")
+
+	expected := &Message{
+		Title:   "Hello",
+		Message: "World",
+	}
+
+	if reflect.DeepEqual(message, expected) == false {
+		t.Errorf("Invalid message from NewMessage")
+	}
+}
+
+// TestEncodeRequest tests if the url params are encoded properly
+func TestEncodeRequest(t *testing.T) {
+	ts := time.Now()
+	p := New("uQiRzpo4DXghDmr9QzzfQu27cmVRsG")
+	r := NewRecipient("gznej3rKEVAvPUxu9vvNnqpmZpokzF")
+	m := &Message{
+		Message:     "My awesome message",
+		Title:       "My title",
+		Priority:    PriorityEmergency,
+		URL:         "http://google.com",
+		URLTitle:    "Google",
+		Timestamp:   ts.Unix(),
+		Retry:       60 * time.Second,
+		Expire:      time.Hour,
+		DeviceName:  "SuperDevice",
+		CallbackURL: "http://yourapp.com/callback",
+		Sound:       SoundCosmic,
+	}
+
+	// Expected arguments
+	expected := &url.Values{}
+	expected.Set("token", p.token)
+	expected.Add("user", r.token)
+	expected.Add("message", m.Message)
+	expected.Add("title", m.Title)
+	expected.Add("priority", "2")
+	expected.Add("url", "http://google.com")
+	expected.Add("url_title", "Google")
+	expected.Add("timestamp", fmt.Sprintf("%d", ts.Unix()))
+	expected.Add("retry", "60")
+	expected.Add("expire", "3600")
+	expected.Add("device", "SuperDevice")
+	expected.Add("callback", "http://yourapp.com/callback")
+	expected.Add("sound", "cosmic")
+
+	// Encode request
+	result, err := p.encodeRequest(m, r)
+	if err != nil {
+		t.Errorf("Failed to encode request")
+	}
+
+	if reflect.DeepEqual(result, expected) == false {
+		t.Errorf("Invalid message from NewMessage")
 	}
 }
 
