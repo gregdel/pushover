@@ -91,6 +91,15 @@ if err != nil {
 fmt.Println("Acknowledged status :", receiptDetails.Acknowledged)
 ```
 
+You can also cancel an emergency notification before the expiration time.
+
+```
+...
+response, err := app.CancelEmergencyNotification(response.Receipt)
+if err != nil {
+    log.Panic(err)
+}
+```
 
 ## User verification
 

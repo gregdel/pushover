@@ -227,44 +227,8 @@ func (p *Pushover) SendMessage(message *Message, recipient *Recipient) (*Respons
 		return nil, err
 	}
 
-	// Send request
-	resp, err := http.PostForm(url, *urlValues)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	// Only 500 errors will not repsond a readable result
-	if resp.StatusCode >= http.StatusInternalServerError {
-		return nil, ErrHTTPPushover
-	}
-
-	// Get response
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	// Unmarshal
-	var response *Response
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check response status
-	if response.Status != 1 {
-		return nil, response.Errors
-	}
-
-	// Get app limits from headers
-	appLimits, err := newLimit(resp.Header)
-	if err != nil {
-		return nil, err
-	}
-	response.Limit = appLimits
-
-	return response, nil
+	// Post the from and check the headers of the response
+	return p.postForm(url, urlValues, true)
 }
 
 // Validate Pushover token
@@ -583,7 +547,7 @@ func (p *Pushover) GetRecipientDetails(recipient *Recipient) (*RecipientDetails,
 	}
 	defer resp.Body.Close()
 
-	// Only 500 errors will not repsond a readable result
+	// Only 500 errors will not respond a readable result
 	if resp.StatusCode >= http.StatusInternalServerError {
 		return nil, ErrHTTPPushover
 	}
@@ -607,4 +571,64 @@ func (p *Pushover) GetRecipientDetails(recipient *Recipient) (*RecipientDetails,
 	}
 
 	return response, nil
+}
+
+// postForm is a generic post function. It checks the response from pushover
+// and retrieve headers if the returnHeaders argument is set to "true"
+func (p *Pushover) postForm(url string, urlValues *url.Values, returnHeaders bool) (*Response, error) {
+	// Send request
+	resp, err := http.PostForm(url, *urlValues)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Only 500 errors will not respond a readable result
+	if resp.StatusCode >= http.StatusInternalServerError {
+		return nil, ErrHTTPPushover
+	}
+
+	// Get response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal
+	var response *Response
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check response status
+	if response.Status != 1 {
+		return nil, response.Errors
+	}
+
+	// The headers are only returned when posting a new notification
+	if returnHeaders {
+		// Get app limits from headers
+		appLimits, err := newLimit(resp.Header)
+		if err != nil {
+			return nil, err
+		}
+		response.Limit = appLimits
+	}
+
+	return response, nil
+}
+
+// CancelEmergencyNotification helps stop a notification retry in case of a
+// notification with an Emergency priority before reaching the expiration time.
+// It requires the response receipt in order to stop the right notification.
+func (p *Pushover) CancelEmergencyNotification(receipt string) (*Response, error) {
+	endpoint := fmt.Sprintf("%s/receipts/%s/cancel.json", APIEndpoint, receipt)
+
+	// URL values
+	urlValues := &url.Values{}
+	urlValues.Set("token", p.token)
+
+	// Post and do not check headers
+	return p.postForm(endpoint, urlValues, false)
 }
