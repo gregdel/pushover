@@ -14,7 +14,7 @@ Based on their [documentation](https://pushover.net/api). It's a convenient way 
 
 Here is a simple example for sending a notification to a recipient. A recipient can be a user or a group. There is no real difference, they both use a notification token.
 
-```
+```go
 package main
 
 import (
@@ -48,7 +48,7 @@ func main() {
 
 There is a simple way to create a message with a title. Instead of using pushover.NewMessage you can use pushover.NewMessageWithTitle.
 
-```
+```go
 message := pushover.NewMessageWithTitle("My awesome message", "My title")
 ```
 
@@ -56,7 +56,7 @@ message := pushover.NewMessageWithTitle("My awesome message", "My title")
 
 If you want a more detailed message you can still do it.
 
-```
+```go
 message := &pushover.Message{
     Message:     "My awesome message",
     Title:       "My title",
@@ -77,7 +77,7 @@ message := &pushover.Message{
 If you're using an emergency notification you'll have to specify a retry period and an expiration delay. You can get the receipt details using the token in the message response.
 
 
-```
+```go
 ...
 response, err := app.SendMessage(message, recipient)
 if err != nil {
@@ -94,8 +94,7 @@ fmt.Println("Acknowledged status :", receiptDetails.Acknowledged)
 
 You can also cancel an emergency notification before the expiration time.
 
-```
-...
+```go
 response, err := app.CancelEmergencyNotification(response.Receipt)
 if err != nil {
     log.Panic(err)
@@ -106,7 +105,7 @@ if err != nil {
 
 If you want to validate that the recipient token is valid.
 
-```
+```go
 ...
 recipientDetails, err := app.GetRecipientDetails(recipient)
 if err != nil {
