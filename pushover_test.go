@@ -398,42 +398,6 @@ func TestUnmarshalReceiptDetails(t *testing.T) {
 	}
 }
 
-// TestAppLimitsFromHeaders
-func TestAppLimitsFromHeaders(t *testing.T) {
-	// Fake server with the right headers
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Limit-App-Limit", "7500")
-		w.Header().Set("X-Limit-App-Remaining", "6000")
-		w.Header().Set("X-Limit-App-Reset", "1393653600")
-		fmt.Fprintln(w, "fake response")
-	}))
-	defer ts.Close()
-
-	// Fake get
-	resp, err := http.Get(ts.URL)
-	if err != nil {
-		t.Errorf("Error getting fake URL while testing app limit headers")
-	}
-	defer resp.Body.Close()
-
-	// Get limit from headers
-	appLimits, err := newLimit(resp.Header)
-	if err != nil {
-		t.Errorf("Error getting a newLimit from headers")
-	}
-
-	// Expected result
-	expected := &Limit{
-		Total:     7500,
-		Remaining: 6000,
-		NextReset: time.Unix(int64(1393653600), 0),
-	}
-
-	if reflect.DeepEqual(appLimits, expected) == false {
-		t.Errorf("App limits not properly set")
-	}
-}
-
 // TestNewMessageWithTitle
 func TestNewMessageWithTitle(t *testing.T) {
 	message := NewMessageWithTitle("World", "Hello")
@@ -491,6 +455,60 @@ func TestEncodeRequest(t *testing.T) {
 
 	if reflect.DeepEqual(result, expected) == false {
 		t.Errorf("Invalid message from NewMessage")
+	}
+}
+
+// TestPostForm
+func TestValidPostForm(t *testing.T) {
+	// Fake server with the right headers
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Limit-App-Limit", "7500")
+		w.Header().Set("X-Limit-App-Remaining", "6000")
+		w.Header().Set("X-Limit-App-Reset", "1393653600")
+		fmt.Fprintln(w, `{"status":1,"request":"e460545a8b333d0da2f3602aff3133d6"}`)
+	}))
+	defer ts.Close()
+
+	p := &Pushover{}
+	got, err := p.postForm(ts.URL, &url.Values{}, true)
+	if err != nil {
+		t.Fatalf("expected no error, got %q", err)
+	}
+
+	expected := &Response{
+		Status:  1,
+		ID:      "e460545a8b333d0da2f3602aff3133d6",
+		Errors:  nil,
+		Receipt: "",
+		Limit: &Limit{
+			Total:     7500,
+			Remaining: 6000,
+			NextReset: time.Unix(int64(1393653600), 0),
+		},
+	}
+
+	if reflect.DeepEqual(got, expected) == false {
+		t.Errorf("unexpected response from postFrom")
+	}
+}
+
+// TestPostFormErrors
+func TestPostFormErrors(t *testing.T) {
+	// Fake server with the right headers
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, `{"status":0,"request":"e460545a8b333d0da2f3602aff3133d6", "errors":["error1", "error2"]}`)
+	}))
+	defer ts.Close()
+
+	p := &Pushover{}
+	got, err := p.postForm(ts.URL, &url.Values{}, false)
+	if got != nil {
+		t.Fatalf("expected no result, got %q", got)
+	}
+
+	expected := Errors{"error1", "error2"}
+	if reflect.DeepEqual(err, expected) == false {
+		t.Errorf("failed to get postFormErrors")
 	}
 }
 
