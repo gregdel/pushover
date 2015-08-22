@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -330,20 +329,17 @@ func (m *Message) validate() error {
 // Encode pushover request and validate each data before sending
 func (p *Pushover) encodeRequest(message *Message, recipient *Recipient) (*url.Values, error) {
 	// Validate pushover
-	err := p.validate()
-	if err != nil {
+	if err := p.validate(); err != nil {
 		return nil, err
 	}
 
 	// Validate recipient
-	err = recipient.validate()
-	if err != nil {
+	if err := recipient.validate(); err != nil {
 		return nil, err
 	}
 
 	// Validate message
-	err = message.validate()
-	if err != nil {
+	if err := message.validate(); err != nil {
 		return nil, err
 	}
 
@@ -417,18 +413,10 @@ func (p *Pushover) GetReceiptDetails(receipt string) (*ReceiptDetails, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	// Get response
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	// Unmarshal
+	// Decode the JSON response
 	var details *ReceiptDetails
-	err = json.Unmarshal(body, &details)
-	if err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&details); err != nil {
 		return nil, err
 	}
 
@@ -526,14 +514,12 @@ func (p *Pushover) GetRecipientDetails(recipient *Recipient) (*RecipientDetails,
 	endpoint := fmt.Sprintf("%s/users/validate.json", APIEndpoint)
 
 	// Validate pushover
-	err := p.validate()
-	if err != nil {
+	if err := p.validate(); err != nil {
 		return nil, err
 	}
 
 	// Validate recipient
-	err = recipient.validate()
-	if err != nil {
+	if err := recipient.validate(); err != nil {
 		return nil, err
 	}
 
@@ -545,23 +531,15 @@ func (p *Pushover) GetRecipientDetails(recipient *Recipient) (*RecipientDetails,
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	// Only 500 errors will not respond a readable result
 	if resp.StatusCode >= http.StatusInternalServerError {
 		return nil, ErrHTTPPushover
 	}
 
-	// Get response
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	// Unmarshal
+	// Decode the JSON response
 	var response *RecipientDetails
-	err = json.Unmarshal(body, &response)
-	if err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, err
 	}
 
@@ -588,16 +566,9 @@ func (p *Pushover) postForm(url string, urlValues *url.Values, returnHeaders boo
 		return nil, ErrHTTPPushover
 	}
 
-	// Get response
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	// Unmarshal
+	// Decode the JSON response
 	var response *Response
-	err = json.Unmarshal(body, &response)
-	if err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, err
 	}
 
