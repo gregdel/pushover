@@ -3,7 +3,6 @@ package pushover
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,6 +12,24 @@ import (
 	"testing"
 	"time"
 )
+
+// Fake values to be used in the tests
+var fakeTime = time.Now()
+var fakePushover = New("uQiRzpo4DXghDmr9QzzfQu27cmVRsG")
+var fakeRecipient = NewRecipient("gznej3rKEVAvPUxu9vvNnqpmZpokzF")
+var fakeMessage = &Message{
+	Message:     "My awesome message",
+	Title:       "My title",
+	Priority:    PriorityEmergency,
+	URL:         "http://google.com",
+	URLTitle:    "Google",
+	Timestamp:   fakeTime.Unix(),
+	Retry:       60 * time.Second,
+	Expire:      time.Hour,
+	DeviceName:  "SuperDevice",
+	CallbackURL: "http://yourapp.com/callback",
+	Sound:       SoundCosmic,
+}
 
 func TestValidMessage(t *testing.T) {
 	message := Message{
@@ -351,53 +368,6 @@ func TestEmptyReceipt(t *testing.T) {
 	}
 }
 
-// TestUnmarshalReceiptDetails
-func TestUnmarshalReceiptDetails(t *testing.T) {
-	body := []byte(`
-	{
-		"status": 1,
-		"acknowledged": 1,
-		"acknowledged_at": 1424305421,
-		"acknowledged_by": "uYWtrQ4scpDU38cz5X5pvxNvu7b15",
-		"last_delivered_at": 1424305379,
-		"expired": 1,
-		"expires_at": 1424308979,
-		"called_back": 0,
-		"called_back_at": 0,
-		"request": "e95f35c2d75a100a3719b3764f0c8e47"
-	}
-	`)
-
-	// Expected times from timestamp
-	acknowledgedAt := time.Unix(int64(1424305421), 0)
-	lastDeliveredAt := time.Unix(int64(1424305379), 0)
-	expiresAt := time.Unix(int64(1424308979), 0)
-
-	// Expected result
-	expected := &ReceiptDetails{
-		Status:          1,
-		Acknowledged:    true,
-		AcknowledgedAt:  &acknowledgedAt,
-		AcknowledgedBy:  "uYWtrQ4scpDU38cz5X5pvxNvu7b15",
-		LastDeliveredAt: &lastDeliveredAt,
-		Expired:         true,
-		ExpiresAt:       &expiresAt,
-		CalledBack:      false,
-		CalledBackAt:    nil,
-		ID:              "e95f35c2d75a100a3719b3764f0c8e47",
-	}
-
-	var details *ReceiptDetails
-	err := json.Unmarshal(body, &details)
-	if err != nil {
-		t.Errorf("Should not get an error while during the Unmarshal process : %s\n", err)
-	}
-
-	if reflect.DeepEqual(details, expected) == false {
-		t.Errorf("ReceiptDetails should be Unmarshaled properly")
-	}
-}
-
 // TestNewMessageWithTitle
 func TestNewMessageWithTitle(t *testing.T) {
 	message := NewMessageWithTitle("World", "Hello")
@@ -414,33 +384,16 @@ func TestNewMessageWithTitle(t *testing.T) {
 
 // TestEncodeRequest tests if the url params are encoded properly
 func TestEncodeRequest(t *testing.T) {
-	ts := time.Now()
-	p := New("uQiRzpo4DXghDmr9QzzfQu27cmVRsG")
-	r := NewRecipient("gznej3rKEVAvPUxu9vvNnqpmZpokzF")
-	m := &Message{
-		Message:     "My awesome message",
-		Title:       "My title",
-		Priority:    PriorityEmergency,
-		URL:         "http://google.com",
-		URLTitle:    "Google",
-		Timestamp:   ts.Unix(),
-		Retry:       60 * time.Second,
-		Expire:      time.Hour,
-		DeviceName:  "SuperDevice",
-		CallbackURL: "http://yourapp.com/callback",
-		Sound:       SoundCosmic,
-	}
-
 	// Expected arguments
 	expected := &url.Values{}
-	expected.Set("token", p.token)
-	expected.Add("user", r.token)
-	expected.Add("message", m.Message)
-	expected.Add("title", m.Title)
+	expected.Set("token", fakePushover.token)
+	expected.Add("user", fakeRecipient.token)
+	expected.Add("message", fakeMessage.Message)
+	expected.Add("title", fakeMessage.Title)
 	expected.Add("priority", "2")
 	expected.Add("url", "http://google.com")
 	expected.Add("url_title", "Google")
-	expected.Add("timestamp", fmt.Sprintf("%d", ts.Unix()))
+	expected.Add("timestamp", fmt.Sprintf("%d", fakeTime.Unix()))
 	expected.Add("retry", "60")
 	expected.Add("expire", "3600")
 	expected.Add("device", "SuperDevice")
@@ -448,7 +401,7 @@ func TestEncodeRequest(t *testing.T) {
 	expected.Add("sound", "cosmic")
 
 	// Encode request
-	result, err := p.encodeRequest(m, r)
+	result, err := fakePushover.encodeRequest(fakeMessage, fakeRecipient)
 	if err != nil {
 		t.Errorf("Failed to encode request")
 	}
@@ -494,7 +447,6 @@ func TestValidPostForm(t *testing.T) {
 
 // TestPostFormErrors
 func TestPostFormErrors(t *testing.T) {
-	// Fake server with the right headers
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, `{"status":0,"request":"e460545a8b333d0da2f3602aff3133d6", "errors":["error1", "error2"]}`)
 	}))
@@ -509,6 +461,175 @@ func TestPostFormErrors(t *testing.T) {
 	expected := Errors{"error1", "error2"}
 	if reflect.DeepEqual(err, expected) == false {
 		t.Errorf("failed to get postFormErrors")
+	}
+}
+
+// TestErrorsString tests the custom error string
+func TestErrorsString(t *testing.T) {
+	e := &Errors{"error1", "error2"}
+	got := e.Error()
+	expected := fmt.Sprintf("Errors:\nerror1\nerror2")
+
+	if got != expected {
+		t.Errorf("invalid error string\ngot:\n%s\nexpected:\n%s\n", got, expected)
+	}
+}
+
+// TestGetRecipienDetails
+func TestGetRecipienDetails(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, `{"status":1,"request":"e460545a8b333d0da2f3602aff3133d6"}`)
+	}))
+	defer ts.Close()
+
+	APIEndpoint = ts.URL
+	got, err := fakePushover.GetRecipientDetails(fakeRecipient)
+	if err != nil {
+		t.Fatalf("expected no error, got %q", err)
+	}
+
+	expected := &RecipientDetails{
+		Status:    1,
+		Group:     0,
+		Devices:   nil,
+		RequestID: "e460545a8b333d0da2f3602aff3133d6",
+		Errors:    nil,
+	}
+
+	if reflect.DeepEqual(got, expected) == false {
+		t.Errorf("unexpected response from postFrom")
+	}
+}
+
+// TestGetRecipienDetailsError
+func TestGetRecipienDetailsError(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, `{"status":0,"request":"e460545a8b333d0da2f3602aff3133d6"}`)
+	}))
+	defer ts.Close()
+
+	APIEndpoint = ts.URL
+	got, err := fakePushover.GetRecipientDetails(fakeRecipient)
+	if got != nil {
+		t.Fatalf("expected no recipient details, got %q", got)
+	}
+
+	if err == nil {
+		t.Fatalf("expected an error")
+	}
+
+	if err != ErrInvalidRecipient {
+		t.Fatalf("expected %q, got %q", ErrInvalidRecipient, got)
+	}
+}
+
+// TestGetReceiptDetails
+func TestGetReceiptDetails(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, `
+			{
+				"status": 1,
+				"acknowledged": 1,
+				"acknowledged_at": 1424305421,
+				"acknowledged_by": "uYWtrQ4scpDU38cz5X5pvxNvu7b15",
+				"last_delivered_at": 1424305379,
+				"expired": 1,
+				"expires_at": 1424308979,
+				"called_back": 0,
+				"called_back_at": 0,
+				"request": "e95f35c2d75a100a3719b3764f0c8e47"
+			}
+		`)
+	}))
+	defer ts.Close()
+
+	APIEndpoint = ts.URL
+	got, err := fakePushover.GetReceiptDetails("fasdfadfasdfadfaf")
+	if err != nil {
+		t.Fatalf("expected no error, got %q", err)
+	}
+
+	// Expected times from timestamp
+	acknowledgedAt := time.Unix(int64(1424305421), 0)
+	lastDeliveredAt := time.Unix(int64(1424305379), 0)
+	expiresAt := time.Unix(int64(1424308979), 0)
+
+	// Expected result
+	expected := &ReceiptDetails{
+		Status:          1,
+		Acknowledged:    true,
+		AcknowledgedAt:  &acknowledgedAt,
+		AcknowledgedBy:  "uYWtrQ4scpDU38cz5X5pvxNvu7b15",
+		LastDeliveredAt: &lastDeliveredAt,
+		Expired:         true,
+		ExpiresAt:       &expiresAt,
+		CalledBack:      false,
+		CalledBackAt:    nil,
+		ID:              "e95f35c2d75a100a3719b3764f0c8e47",
+	}
+
+	if reflect.DeepEqual(got, expected) == false {
+		t.Errorf("unexpected receipt details")
+	}
+}
+
+// TestCancelEmergencyNotification
+func TestCancelEmergencyNotification(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, `{"status":1,"request":"e460545a8b333d0da2f3602aff3133d6"}`)
+	}))
+	defer ts.Close()
+
+	APIEndpoint = ts.URL
+	p := &Pushover{}
+	got, err := p.CancelEmergencyNotification("fasfaasdfa")
+	if err != nil {
+		t.Fatalf("expected no error, got %q", err)
+	}
+
+	expected := &Response{
+		Status:  1,
+		ID:      "e460545a8b333d0da2f3602aff3133d6",
+		Errors:  nil,
+		Receipt: "",
+		Limit:   nil,
+	}
+
+	if reflect.DeepEqual(got, expected) == false {
+		t.Errorf("unexpected response from postFrom")
+	}
+}
+
+// TestSendMessage
+func TestSendMessage(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Limit-App-Limit", "7500")
+		w.Header().Set("X-Limit-App-Remaining", "6000")
+		w.Header().Set("X-Limit-App-Reset", "1393653600")
+		fmt.Fprintln(w, `{"status":1,"request":"e460545a8b333d0da2f3602aff3133d6"}`)
+	}))
+	defer ts.Close()
+
+	APIEndpoint = ts.URL
+	got, err := fakePushover.SendMessage(fakeMessage, fakeRecipient)
+	if err != nil {
+		t.Fatalf("expected no error, got %q", err)
+	}
+
+	expected := &Response{
+		Status:  1,
+		ID:      "e460545a8b333d0da2f3602aff3133d6",
+		Errors:  nil,
+		Receipt: "",
+		Limit: &Limit{
+			Total:     7500,
+			Remaining: 6000,
+			NextReset: time.Unix(int64(1393653600), 0),
+		},
+	}
+
+	if reflect.DeepEqual(got, expected) == false {
+		t.Errorf("unexpected response from postFrom")
 	}
 }
 

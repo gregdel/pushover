@@ -10,31 +10,32 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
 // APIEndpoint is the API base URL for any request
-const APIEndpoint = "https://api.pushover.net/1"
+var APIEndpoint = "https://api.pushover.net/1"
 
 // Pushover custom errors
 var (
-	ErrHTTPPushover              = errors.New("pushover http error")
-	ErrEmptyToken                = errors.New("empty API token")
-	ErrEmptyURL                  = errors.New("empty URL, URLTitle needs an URL")
-	ErrEmptyRecipientToken       = errors.New("empty recipient token")
-	ErrInvalidRecipientToken     = errors.New("invalid recipient token")
-	ErrInvalidRecipient          = errors.New("invalid recipient")
-	ErrInvalidHeaders            = errors.New("invalid headers in server response")
-	ErrInvalidPriority           = errors.New("invalid priority")
-	ErrInvalidToken              = errors.New("invalid API token")
-	ErrMessageEmpty              = errors.New("message empty")
-	ErrMessageTitleTooLong       = errors.New("message title too long")
-	ErrMessageTooLong            = errors.New("message too long")
-	ErrMessageURLTitleTooLong    = errors.New("message URL title too long")
-	ErrMessageURLTooLong         = errors.New("message URL too long")
-	ErrMissingEmergencyParameter = errors.New("missing emergency parameter")
-	ErrInvalidDeviceName         = errors.New("invalid device name")
-	ErrEmptyReceipt              = errors.New("empty receipt")
+	ErrHTTPPushover              = errors.New("pushover: http error")
+	ErrEmptyToken                = errors.New("pushover: empty API token")
+	ErrEmptyURL                  = errors.New("pushover: empty URL, URLTitle needs an URL")
+	ErrEmptyRecipientToken       = errors.New("pushover: empty recipient token")
+	ErrInvalidRecipientToken     = errors.New("pushover: invalid recipient token")
+	ErrInvalidRecipient          = errors.New("pushover: invalid recipient")
+	ErrInvalidHeaders            = errors.New("pushover: invalid headers in server response")
+	ErrInvalidPriority           = errors.New("pushover: invalid priority")
+	ErrInvalidToken              = errors.New("pushover: invalid API token")
+	ErrMessageEmpty              = errors.New("pushover: message empty")
+	ErrMessageTitleTooLong       = errors.New("pushover: message title too long")
+	ErrMessageTooLong            = errors.New("pushover: message too long")
+	ErrMessageURLTitleTooLong    = errors.New("pushover: message URL title too long")
+	ErrMessageURLTooLong         = errors.New("pushover: message URL too long")
+	ErrMissingEmergencyParameter = errors.New("pushover: missing emergency parameter")
+	ErrInvalidDeviceName         = errors.New("pushover: invalid device name")
+	ErrEmptyReceipt              = errors.New("pushover: empty receipt")
 )
 
 // API limitations
@@ -106,6 +107,16 @@ func New(token string) *Pushover {
 // Errors represents the errors returned by pushover
 type Errors []string
 
+// Error represents the error as a string
+func (e Errors) Error() string {
+	ret := ""
+	if len(e) > 0 {
+		ret = fmt.Sprintf("Errors:\n")
+		ret += strings.Join(e, "\n")
+	}
+	return ret
+}
+
 // Request to the API
 type Request struct {
 	Message   *Message
@@ -169,15 +180,6 @@ func newLimit(headers http.Header) (*Limit, error) {
 		Remaining: headersValues["X-Limit-App-Remaining"],
 		NextReset: time.Unix(int64(headersValues["X-Limit-App-Reset"]), 0),
 	}, nil
-}
-
-// Error represents the error as a string
-func (e Errors) Error() string {
-	ret := ""
-	for _, err := range e {
-		ret = fmt.Sprintf("%s%s\n", ret, err)
-	}
-	return ret
 }
 
 // String represents a printable form of the response
