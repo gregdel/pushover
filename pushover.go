@@ -6,36 +6,36 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
 // APIEndpoint is the API base URL for any request
-const APIEndpoint = "https://api.pushover.net/1"
+var APIEndpoint = "https://api.pushover.net/1"
 
 // Pushover custom errors
 var (
-	ErrHTTPPushover              = errors.New("pushover http error")
-	ErrEmptyToken                = errors.New("empty API token")
-	ErrEmptyURL                  = errors.New("empty URL, URLTitle needs an URL")
-	ErrEmptyRecipientToken       = errors.New("empty recipient token")
-	ErrInvalidRecipientToken     = errors.New("invalid recipient token")
-	ErrInvalidRecipient          = errors.New("invalid recipient")
-	ErrInvalidHeaders            = errors.New("invalid headers in server response")
-	ErrInvalidPriority           = errors.New("invalid priority")
-	ErrInvalidToken              = errors.New("invalid API token")
-	ErrMessageEmpty              = errors.New("message empty")
-	ErrMessageTitleTooLong       = errors.New("message title too long")
-	ErrMessageTooLong            = errors.New("message too long")
-	ErrMessageURLTitleTooLong    = errors.New("message URL title too long")
-	ErrMessageURLTooLong         = errors.New("message URL too long")
-	ErrMissingEmergencyParameter = errors.New("missing emergency parameter")
-	ErrInvalidDeviceName         = errors.New("invalid device name")
-	ErrEmptyReceipt              = errors.New("empty receipt")
+	ErrHTTPPushover              = errors.New("pushover: http error")
+	ErrEmptyToken                = errors.New("pushover: empty API token")
+	ErrEmptyURL                  = errors.New("pushover: empty URL, URLTitle needs an URL")
+	ErrEmptyRecipientToken       = errors.New("pushover: empty recipient token")
+	ErrInvalidRecipientToken     = errors.New("pushover: invalid recipient token")
+	ErrInvalidRecipient          = errors.New("pushover: invalid recipient")
+	ErrInvalidHeaders            = errors.New("pushover: invalid headers in server response")
+	ErrInvalidPriority           = errors.New("pushover: invalid priority")
+	ErrInvalidToken              = errors.New("pushover: invalid API token")
+	ErrMessageEmpty              = errors.New("pushover: message empty")
+	ErrMessageTitleTooLong       = errors.New("pushover: message title too long")
+	ErrMessageTooLong            = errors.New("pushover: message too long")
+	ErrMessageURLTitleTooLong    = errors.New("pushover: message URL title too long")
+	ErrMessageURLTooLong         = errors.New("pushover: message URL too long")
+	ErrMissingEmergencyParameter = errors.New("pushover: missing emergency parameter")
+	ErrInvalidDeviceName         = errors.New("pushover: invalid device name")
+	ErrEmptyReceipt              = errors.New("pushover: empty receipt")
 )
 
 // API limitations
@@ -107,6 +107,16 @@ func New(token string) *Pushover {
 // Errors represents the errors returned by pushover
 type Errors []string
 
+// Error represents the error as a string
+func (e Errors) Error() string {
+	ret := ""
+	if len(e) > 0 {
+		ret = fmt.Sprintf("Errors:\n")
+		ret += strings.Join(e, "\n")
+	}
+	return ret
+}
+
 // Request to the API
 type Request struct {
 	Message   *Message
@@ -170,15 +180,6 @@ func newLimit(headers http.Header) (*Limit, error) {
 		Remaining: headersValues["X-Limit-App-Remaining"],
 		NextReset: time.Unix(int64(headersValues["X-Limit-App-Reset"]), 0),
 	}, nil
-}
-
-// Error represents the error as a string
-func (e Errors) Error() string {
-	ret := ""
-	for _, err := range e {
-		ret = fmt.Sprintf("%s%s\n", ret, err)
-	}
-	return ret
 }
 
 // String represents a printable form of the response
@@ -330,20 +331,17 @@ func (m *Message) validate() error {
 // Encode pushover request and validate each data before sending
 func (p *Pushover) encodeRequest(message *Message, recipient *Recipient) (*url.Values, error) {
 	// Validate pushover
-	err := p.validate()
-	if err != nil {
+	if err := p.validate(); err != nil {
 		return nil, err
 	}
 
 	// Validate recipient
-	err = recipient.validate()
-	if err != nil {
+	if err := recipient.validate(); err != nil {
 		return nil, err
 	}
 
 	// Validate message
-	err = message.validate()
-	if err != nil {
+	if err := message.validate(); err != nil {
 		return nil, err
 	}
 
@@ -417,18 +415,10 @@ func (p *Pushover) GetReceiptDetails(receipt string) (*ReceiptDetails, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	// Get response
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	// Unmarshal
+	// Decode the JSON response
 	var details *ReceiptDetails
-	err = json.Unmarshal(body, &details)
-	if err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&details); err != nil {
 		return nil, err
 	}
 
@@ -526,14 +516,12 @@ func (p *Pushover) GetRecipientDetails(recipient *Recipient) (*RecipientDetails,
 	endpoint := fmt.Sprintf("%s/users/validate.json", APIEndpoint)
 
 	// Validate pushover
-	err := p.validate()
-	if err != nil {
+	if err := p.validate(); err != nil {
 		return nil, err
 	}
 
 	// Validate recipient
-	err = recipient.validate()
-	if err != nil {
+	if err := recipient.validate(); err != nil {
 		return nil, err
 	}
 
@@ -545,23 +533,15 @@ func (p *Pushover) GetRecipientDetails(recipient *Recipient) (*RecipientDetails,
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	// Only 500 errors will not respond a readable result
 	if resp.StatusCode >= http.StatusInternalServerError {
 		return nil, ErrHTTPPushover
 	}
 
-	// Get response
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	// Unmarshal
+	// Decode the JSON response
 	var response *RecipientDetails
-	err = json.Unmarshal(body, &response)
-	if err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, err
 	}
 
@@ -588,16 +568,9 @@ func (p *Pushover) postForm(url string, urlValues *url.Values, returnHeaders boo
 		return nil, ErrHTTPPushover
 	}
 
-	// Get response
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	// Unmarshal
+	// Decode the JSON response
 	var response *Response
-	err = json.Unmarshal(body, &response)
-	if err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, err
 	}
 
