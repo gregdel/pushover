@@ -1,7 +1,7 @@
 pushover
 =========
 
-[![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](http://godoc.org/github.com/gregdel/pushover)
+[![GoDoc](https://godoc.org/github.com/gregdel/pushover?status.svg)](http://godoc.org/github.com/gregdel/pushover)
 [![Build Status](https://travis-ci.org/gregdel/pushover.svg?branch=master)](https://travis-ci.org/gregdel/pushover)
 [![Coverage Status](https://coveralls.io/repos/gregdel/pushover/badge.svg?branch=master&service=github)](https://coveralls.io/github/gregdel/pushover?branch=master)
 
