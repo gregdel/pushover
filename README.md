@@ -4,6 +4,7 @@ pushover
 [![GoDoc](https://godoc.org/github.com/gregdel/pushover?status.svg)](http://godoc.org/github.com/gregdel/pushover)
 [![Build Status](https://travis-ci.org/gregdel/pushover.svg?branch=master)](https://travis-ci.org/gregdel/pushover)
 [![Coverage Status](https://coveralls.io/repos/gregdel/pushover/badge.svg?branch=master&service=github)](https://coveralls.io/github/gregdel/pushover?branch=master)
+[![Go Report Card](http://goreportcard.com/badge/gregdel/pushover)](http://goreportcard.com/report/gregdel/pushover)
 
 pushover is a wrapper around the Superblock's Pushover API written in go.
 Based on their [documentation](https://pushover.net/api). It's a convenient way to send notifications from a go program with only a few lines of code.
