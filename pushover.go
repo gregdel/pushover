@@ -134,7 +134,7 @@ type Response struct {
 
 // Limit represents the limitation of the application. This information is
 // fetched when posting a new message.
-//	Headers exemple:
+//	Headers example:
 //		X-Limit-App-Limit: 7500
 // 		X-Limit-App-Remaining: 7496
 // 		X-Limit-App-Reset: 1393653600
