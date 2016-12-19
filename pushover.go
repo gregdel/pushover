@@ -262,6 +262,7 @@ type Message struct {
 	CallbackURL string
 	DeviceName  string
 	Sound       string
+	HTML        bool
 }
 
 // NewMessage returns a simple new message
@@ -374,6 +375,10 @@ func (p *Pushover) encodeRequest(message *Message, recipient *Recipient) (*url.V
 
 	if message.Timestamp != 0 {
 		urlValues.Add("timestamp", strconv.FormatInt(message.Timestamp, 10))
+	}
+
+	if message.HTML {
+		urlValues.Add("html", "1")
 	}
 
 	if message.Priority == PriorityEmergency {

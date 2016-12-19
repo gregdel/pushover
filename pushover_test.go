@@ -29,6 +29,7 @@ var fakeMessage = &Message{
 	DeviceName:  "SuperDevice",
 	CallbackURL: "http://yourapp.com/callback",
 	Sound:       SoundCosmic,
+	HTML:        true,
 }
 
 func TestValidMessage(t *testing.T) {
@@ -399,6 +400,7 @@ func TestEncodeRequest(t *testing.T) {
 	expected.Add("device", "SuperDevice")
 	expected.Add("callback", "http://yourapp.com/callback")
 	expected.Add("sound", "cosmic")
+	expected.Add("html", "1")
 
 	// Encode request
 	result, err := fakePushover.encodeRequest(fakeMessage, fakeRecipient)
