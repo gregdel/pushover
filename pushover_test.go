@@ -40,7 +40,6 @@ func TestValidMessage(t *testing.T) {
 		URL:        "http://google.com",
 		URLTitle:   "Go check this URL",
 		Priority:   PriorityNormal,
-		Html:       1,
 	}
 
 	err := message.validate()
