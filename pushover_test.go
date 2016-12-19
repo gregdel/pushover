@@ -29,7 +29,7 @@ var fakeMessage = &Message{
 	DeviceName:  "SuperDevice",
 	CallbackURL: "http://yourapp.com/callback",
 	Sound:       SoundCosmic,
-	Html:        1,
+	HTML:        true,
 }
 
 func TestValidMessage(t *testing.T) {
@@ -401,6 +401,7 @@ func TestEncodeRequest(t *testing.T) {
 	expected.Add("device", "SuperDevice")
 	expected.Add("callback", "http://yourapp.com/callback")
 	expected.Add("sound", "cosmic")
+	expected.Add("html", "1")
 
 	// Encode request
 	result, err := fakePushover.encodeRequest(fakeMessage, fakeRecipient)
@@ -632,23 +633,6 @@ func TestSendMessage(t *testing.T) {
 
 	if reflect.DeepEqual(got, expected) == false {
 		t.Errorf("unexpected response from postFrom")
-	}
-}
-
-// TestHtmlMessage tests messages with HTML formatting
-func TestHtmlMessage(t *testing.T) {
-	message := Message{
-		Message: "Test message",
-		Html:    5,
-	}
-
-	err := message.validate()
-	if err == nil {
-		t.Errorf("Message should not be valid with an 'html' value of anything other than 0 or 1")
-	}
-
-	if err != ErrInvalidHtml {
-		t.Errorf("Should get an ErrInvalidHtml")
 	}
 }
 
