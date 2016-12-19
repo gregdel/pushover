@@ -29,6 +29,7 @@ var fakeMessage = &Message{
 	DeviceName:  "SuperDevice",
 	CallbackURL: "http://yourapp.com/callback",
 	Sound:       SoundCosmic,
+	Html:        1,
 }
 
 func TestValidMessage(t *testing.T) {

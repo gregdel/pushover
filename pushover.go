@@ -28,6 +28,7 @@ var (
 	ErrInvalidHeaders            = errors.New("pushover: invalid headers in server response")
 	ErrInvalidPriority           = errors.New("pushover: invalid priority")
 	ErrInvalidToken              = errors.New("pushover: invalid API token")
+	ErrInvalidHtml               = errors.New("pushover: invalid HTML value")
 	ErrMessageEmpty              = errors.New("pushover: message empty")
 	ErrMessageTitleTooLong       = errors.New("pushover: message title too long")
 	ErrMessageTooLong            = errors.New("pushover: message too long")
@@ -262,6 +263,7 @@ type Message struct {
 	CallbackURL string
 	DeviceName  string
 	Sound       string
+	Html        int
 }
 
 // NewMessage returns a simple new message
@@ -316,6 +318,11 @@ func (m *Message) validate() error {
 		if m.Retry == 0 || m.Expire == 0 {
 			return ErrMissingEmergencyParameter
 		}
+	}
+
+	// Validate HTML field
+	if m.Html > 1 {
+		return ErrInvalidHtml
 	}
 
 	// Test device name
