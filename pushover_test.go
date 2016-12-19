@@ -40,6 +40,7 @@ func TestValidMessage(t *testing.T) {
 		URL:        "http://google.com",
 		URLTitle:   "Go check this URL",
 		Priority:   PriorityNormal,
+		Html:       1,
 	}
 
 	err := message.validate()
@@ -631,6 +632,23 @@ func TestSendMessage(t *testing.T) {
 
 	if reflect.DeepEqual(got, expected) == false {
 		t.Errorf("unexpected response from postFrom")
+	}
+}
+
+// TestHtmlMessage tests messages with HTML formatting
+func TestHtmlMessage(t *testing.T) {
+	message := Message{
+		Message: "Test message",
+		Html:    5,
+	}
+
+	err := message.validate()
+	if err == nil {
+		t.Errorf("Message should not be valid with an 'html' value of anything other than 0 or 1")
+	}
+
+	if err != ErrInvalidHtml {
+		t.Errorf("Should get an ErrInvalidHtml")
 	}
 }
 
