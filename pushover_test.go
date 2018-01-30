@@ -35,7 +35,7 @@ var fakeMessage = &Message{
 func TestValidMessage(t *testing.T) {
 	message := Message{
 		Message:    "Hello world !",
-		Title:      "Exemple",
+		Title:      "Example",
 		DeviceName: "My_Device",
 		URL:        "http://google.com",
 		URLTitle:   "Go check this URL",
