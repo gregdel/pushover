@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -330,7 +331,7 @@ func (m *Message) validate() error {
 }
 
 // Encode pushover request and validate each data before sending
-func (p *Pushover) encodeRequest(message *Message, recipient *Recipient) (*url.Values, error) {
+func (p *Pushover) encodeRequest(message *Message, recipient *Recipient) (map[string]string, error) {
 	// Validate pushover
 	if err := p.validate(); err != nil {
 		return nil, err
@@ -347,49 +348,50 @@ func (p *Pushover) encodeRequest(message *Message, recipient *Recipient) (*url.V
 	}
 
 	// Create the url values
-	urlValues := &url.Values{}
-	urlValues.Set("token", p.token)
-	urlValues.Add("user", recipient.token)
-	urlValues.Add("message", message.Message)
-	urlValues.Add("priority", fmt.Sprintf("%d", message.Priority))
+	params := map[string]string{
+		"token":    p.token,
+		"user":     recipient.token,
+		"message":  message.Message,
+		"priority": fmt.Sprintf("%d", message.Priority),
+	}
 
 	if message.Title != "" {
-		urlValues.Add("title", message.Title)
+		params["title"] = message.Title
 	}
 
 	if message.URL != "" {
-		urlValues.Add("url", message.URL)
+		params["url"] = message.URL
 	}
 
 	if message.URLTitle != "" {
-		urlValues.Add("url_title", message.URLTitle)
+		params["url_title"] = message.URLTitle
 	}
 
 	if message.Sound != "" {
-		urlValues.Add("sound", message.Sound)
+		params["sound"] = message.Sound
 	}
 
 	if message.DeviceName != "" {
-		urlValues.Add("device", message.DeviceName)
+		params["device"] = message.DeviceName
 	}
 
 	if message.Timestamp != 0 {
-		urlValues.Add("timestamp", strconv.FormatInt(message.Timestamp, 10))
+		params["timestamp"] = strconv.FormatInt(message.Timestamp, 10)
 	}
 
 	if message.HTML {
-		urlValues.Add("html", "1")
+		params["html"] = "1"
 	}
 
 	if message.Priority == PriorityEmergency {
-		urlValues.Add("retry", strconv.FormatFloat(message.Retry.Seconds(), 'f', -1, 64))
-		urlValues.Add("expire", strconv.FormatFloat(message.Expire.Seconds(), 'f', -1, 64))
+		params["retry"] = strconv.FormatFloat(message.Retry.Seconds(), 'f', -1, 64)
+		params["expire"] = strconv.FormatFloat(message.Expire.Seconds(), 'f', -1, 64)
 		if message.CallbackURL != "" {
-			urlValues.Add("callback", message.CallbackURL)
+			params["callback"] = message.CallbackURL
 		}
 	}
 
-	return urlValues, nil
+	return params, nil
 }
 
 // ReceiptDetails represents the receipt informations in case of emergency priority
@@ -560,9 +562,22 @@ func (p *Pushover) GetRecipientDetails(recipient *Recipient) (*RecipientDetails,
 
 // postForm is a generic post function. It checks the response from pushover
 // and retrieve headers if the returnHeaders argument is set to "true"
-func (p *Pushover) postForm(url string, urlValues *url.Values, returnHeaders bool) (*Response, error) {
+func (p *Pushover) postForm(url string, params map[string]string, returnHeaders bool) (*Response, error) {
+	body := &bytes.Buffer{}
+
+	// Write the body as multipart form data
+	w := multipart.NewWriter(body)
+	for k, v := range params {
+		if err := w.WriteField(k, v); err != nil {
+			return nil, err
+		}
+	}
+	if err := w.Close(); err != nil {
+		return nil, err
+	}
+
 	// Send request
-	resp, err := http.PostForm(url, *urlValues)
+	resp, err := http.Post(url, w.FormDataContentType(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -603,10 +618,6 @@ func (p *Pushover) postForm(url string, urlValues *url.Values, returnHeaders boo
 func (p *Pushover) CancelEmergencyNotification(receipt string) (*Response, error) {
 	endpoint := fmt.Sprintf("%s/receipts/%s/cancel.json", APIEndpoint, receipt)
 
-	// URL values
-	urlValues := &url.Values{}
-	urlValues.Set("token", p.token)
-
 	// Post and do not check headers
-	return p.postForm(endpoint, urlValues, false)
+	return p.postForm(endpoint, map[string]string{"token": p.token}, false)
 }

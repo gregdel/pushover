@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"reflect"
 	"testing"
 	"time"
@@ -290,21 +289,22 @@ func TestEncodeRequest(t *testing.T) {
 	}
 
 	// Expected arguments
-	expected := &url.Values{}
-	expected.Set("token", fakePushover.token)
-	expected.Add("user", fakeRecipient.token)
-	expected.Add("message", fakeMessage.Message)
-	expected.Add("title", fakeMessage.Title)
-	expected.Add("priority", "2")
-	expected.Add("url", "http://google.com")
-	expected.Add("url_title", "Google")
-	expected.Add("timestamp", fmt.Sprintf("%d", fakeTime.Unix()))
-	expected.Add("retry", "60")
-	expected.Add("expire", "3600")
-	expected.Add("device", "SuperDevice")
-	expected.Add("callback", "http://yourapp.com/callback")
-	expected.Add("sound", "cosmic")
-	expected.Add("html", "1")
+	expected := map[string]string{
+		"token":     fakePushover.token,
+		"user":      fakeRecipient.token,
+		"message":   fakeMessage.Message,
+		"title":     fakeMessage.Title,
+		"priority":  "2",
+		"url":       "http://google.com",
+		"url_title": "Google",
+		"timestamp": fmt.Sprintf("%d", fakeTime.Unix()),
+		"retry":     "60",
+		"expire":    "3600",
+		"device":    "SuperDevice",
+		"callback":  "http://yourapp.com/callback",
+		"sound":     "cosmic",
+		"html":      "1",
+	}
 
 	// Encode request
 	result, err := fakePushover.encodeRequest(fakeMessage, fakeRecipient)
@@ -329,7 +329,7 @@ func TestValidPostForm(t *testing.T) {
 	defer ts.Close()
 
 	p := &Pushover{}
-	got, err := p.postForm(ts.URL, &url.Values{}, true)
+	got, err := p.postForm(ts.URL, map[string]string{}, true)
 	if err != nil {
 		t.Fatalf("expected no error, got %q", err)
 	}
@@ -359,7 +359,7 @@ func TestPostFormErrors(t *testing.T) {
 	defer ts.Close()
 
 	p := &Pushover{}
-	got, err := p.postForm(ts.URL, &url.Values{}, false)
+	got, err := p.postForm(ts.URL, map[string]string{}, false)
 	if got != nil {
 		t.Fatalf("expected no result, got %q", got)
 	}
