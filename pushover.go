@@ -353,7 +353,7 @@ func (p *Pushover) encodeRequest(message *Message, recipient *Recipient) (*url.V
 	urlValues.Add("message", message.Message)
 	urlValues.Add("priority", fmt.Sprintf("%d", message.Priority))
 
-	if message.Message != "" {
+	if message.Title != "" {
 		urlValues.Add("title", message.Title)
 	}
 
