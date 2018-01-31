@@ -3,6 +3,7 @@ package pushover
 import (
 	"os"
 	"regexp"
+	"strconv"
 	"time"
 )
 
@@ -95,7 +96,7 @@ func (m *Message) validate() error {
 		}
 	}
 
-	// Test file attachement
+	// Test file attachment
 	if m.AttachmentPath != "" {
 		stat, err := os.Stat(m.AttachmentPath)
 		if err != nil {
@@ -108,4 +109,54 @@ func (m *Message) validate() error {
 	}
 
 	return nil
+}
+
+// Return a map filled with the relevant data
+func (m *Message) toMap() map[string]string {
+	ret := map[string]string{
+		"message":  m.Message,
+		"priority": strconv.Itoa(m.Priority),
+	}
+
+	if m.Title != "" {
+		ret["title"] = m.Title
+	}
+
+	if m.URL != "" {
+		ret["url"] = m.URL
+	}
+
+	if m.URLTitle != "" {
+		ret["url_title"] = m.URLTitle
+	}
+
+	if m.Sound != "" {
+		ret["sound"] = m.Sound
+	}
+
+	if m.DeviceName != "" {
+		ret["device"] = m.DeviceName
+	}
+
+	if m.Timestamp != 0 {
+		ret["timestamp"] = strconv.FormatInt(m.Timestamp, 10)
+	}
+
+	if m.HTML {
+		ret["html"] = "1"
+	}
+
+	if m.AttachmentPath != "" {
+		ret["attachment_path"] = m.AttachmentPath
+	}
+
+	if m.Priority == PriorityEmergency {
+		ret["retry"] = strconv.FormatFloat(m.Retry.Seconds(), 'f', -1, 64)
+		ret["expire"] = strconv.FormatFloat(m.Expire.Seconds(), 'f', -1, 64)
+		if m.CallbackURL != "" {
+			ret["callback"] = m.CallbackURL
+		}
+	}
+
+	return ret
 }

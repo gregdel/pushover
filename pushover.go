@@ -12,7 +12,6 @@ import (
 	"net/url"
 	"os"
 	"regexp"
-	"strconv"
 )
 
 // Regexp validation
@@ -159,52 +158,9 @@ func (p *Pushover) encodeRequest(message *Message, recipient *Recipient) (map[st
 	}
 
 	// Create the url values
-	params := map[string]string{
-		"token":    p.token,
-		"user":     recipient.token,
-		"message":  message.Message,
-		"priority": fmt.Sprintf("%d", message.Priority),
-	}
-
-	if message.Title != "" {
-		params["title"] = message.Title
-	}
-
-	if message.URL != "" {
-		params["url"] = message.URL
-	}
-
-	if message.URLTitle != "" {
-		params["url_title"] = message.URLTitle
-	}
-
-	if message.Sound != "" {
-		params["sound"] = message.Sound
-	}
-
-	if message.DeviceName != "" {
-		params["device"] = message.DeviceName
-	}
-
-	if message.Timestamp != 0 {
-		params["timestamp"] = strconv.FormatInt(message.Timestamp, 10)
-	}
-
-	if message.HTML {
-		params["html"] = "1"
-	}
-
-	if message.AttachmentPath != "" {
-		params["attachment_path"] = message.AttachmentPath
-	}
-
-	if message.Priority == PriorityEmergency {
-		params["retry"] = strconv.FormatFloat(message.Retry.Seconds(), 'f', -1, 64)
-		params["expire"] = strconv.FormatFloat(message.Expire.Seconds(), 'f', -1, 64)
-		if message.CallbackURL != "" {
-			params["callback"] = message.CallbackURL
-		}
-	}
+	params := message.toMap()
+	params["token"] = p.token
+	params["user"] = recipient.token
 
 	return params, nil
 }
