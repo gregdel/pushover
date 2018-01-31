@@ -14,345 +14,233 @@ import (
 )
 
 // Fake values to be used in the tests
-var fakeTime = time.Now()
 var fakePushover = New("uQiRzpo4DXghDmr9QzzfQu27cmVRsG")
 var fakeRecipient = NewRecipient("gznej3rKEVAvPUxu9vvNnqpmZpokzF")
-var fakeMessage = &Message{
-	Message:     "My awesome message",
-	Title:       "My title",
-	Priority:    PriorityEmergency,
-	URL:         "http://google.com",
-	URLTitle:    "Google",
-	Timestamp:   fakeTime.Unix(),
-	Retry:       60 * time.Second,
-	Expire:      time.Hour,
-	DeviceName:  "SuperDevice",
-	CallbackURL: "http://yourapp.com/callback",
-	Sound:       SoundCosmic,
-	HTML:        true,
-}
 
-func TestValidMessage(t *testing.T) {
-	message := Message{
-		Message:    "Hello world !",
-		Title:      "Example",
-		DeviceName: "My_Device",
-		URL:        "http://google.com",
-		URLTitle:   "Go check this URL",
-		Priority:   PriorityNormal,
-	}
-
-	err := message.validate()
-	if err != nil {
-		t.Errorf("Message should be valid instead there is an error : %s", err)
-	}
-}
-
-// TestEmptyMessage tests if the message empty
-func TestEmptyMessage(t *testing.T) {
-	message := Message{}
-
-	err := message.validate()
-	if err == nil {
-		t.Errorf("Message should not be valid")
-	}
-
-	if err != ErrMessageEmpty {
-		t.Errorf("Should get an ErrMessageEmpty")
-	}
-}
-
-// TestMessageSize tests if the message size is valid
-func TestMessageSize(t *testing.T) {
-	// Create a random 1024 char string
-	randMessage, err := getRandomString(MessageMaxLength)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	message := Message{
-		Message: randMessage,
-	}
-
-	err = message.validate()
-	if err != nil {
-		t.Errorf("Message length should be valid")
-	}
-
-	// Create a random 1025 char string, it should be too long
-	randMessage, err = getRandomString(MessageMaxLength + 1)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	message.Message = randMessage
-	err = message.validate()
-	if err == nil {
-		t.Errorf("Message should not be valid")
-	}
-
-	if err != ErrMessageTooLong {
-		t.Errorf("Should get an ErrMessageTooLong")
-	}
-}
-
-// TestMessageTitleSize tests if the message size is valid
-func TestMessageTitleSize(t *testing.T) {
-	randTitle, err := getRandomString(MessageTitleMaxLength)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	message := Message{
-		Message: "Test message",
-		Title:   randTitle,
-	}
-
-	err = message.validate()
-	if err != nil {
-		t.Errorf("Message title length should be valid")
-	}
-
-	randTitle, err = getRandomString(MessageTitleMaxLength + 1)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	message.Title = randTitle
-	err = message.validate()
-	if err == nil {
-		t.Errorf("Message title should not be valid")
-	}
-
-	if err != ErrMessageTitleTooLong {
-		t.Errorf("Should get an ErrMessageTitleTooLong")
-	}
-}
-
-// TestMessageURLSize tests if the message size is valid
-func TestMessageURLSize(t *testing.T) {
-	randTitle, err := getRandomString(MessageURLMaxLength)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	message := Message{
-		Message: "Test message",
-		URL:     randTitle,
-	}
-
-	err = message.validate()
-	if err != nil {
-		t.Errorf("Message URL length should be valid")
-	}
-
-	randTitle, err = getRandomString(MessageURLMaxLength + 1)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	message.URL = randTitle
-	err = message.validate()
-	if err == nil {
-		t.Errorf("Message URL should not be valid")
-	}
-
-	if err != ErrMessageURLTooLong {
-		t.Errorf("Should get an ErrMessageURLTooLong")
-	}
-}
-
-// TestMessageURLTitleSize tests if the url title size is valid
-func TestMessageURLTitleSize(t *testing.T) {
-	randTitle, err := getRandomString(MessageURLTitleMaxLength)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	message := Message{
-		Message:  "Test message",
-		URL:      "http://google.com",
-		URLTitle: randTitle,
-	}
-
-	err = message.validate()
-	if err != nil {
-		t.Errorf("Message URL title length should be valid")
-	}
-
-	randTitle, err = getRandomString(MessageURLTitleMaxLength + 1)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	message.URLTitle = randTitle
-	err = message.validate()
-	if err == nil {
-		t.Errorf("Message URL title should not be valid")
-	}
-
-	if err != ErrMessageURLTitleTooLong {
-		t.Errorf("Should get an ErrMessageURLTitleTooLong")
-	}
-}
-
-// TestMessageURLTitleWithNoURL tests if URL is set if the title is not
-func TestMessageURLTitleWithNoURL(t *testing.T) {
-	message := Message{
-		Message:  "Test message",
-		URLTitle: "URL Title",
-	}
-
-	err := message.validate()
-	if err == nil {
-		t.Errorf("Message should not be valid if URLTitle is set with no URL")
-	}
-
-	if err != ErrEmptyURL {
-		t.Errorf("Should get an ErrEmptyURL")
-	}
-}
-
-// TestMessagePriority tests message priorities
-func TestMessageEmergencyPriority(t *testing.T) {
-	message := Message{
-		Message:  "Test message",
-		Priority: 2,
-	}
-
-	err := message.validate()
-	if err == nil {
-		t.Errorf("Message should not be valid with no Emergency infos")
-	}
-
-	if err != ErrMissingEmergencyParameter {
-		t.Errorf("Should get an ErrInvalidPriority")
-	}
-}
-
-// TestMessageEmergencyPriority tests message with emergency priority
-func TestMessagePriority(t *testing.T) {
-	for _, p := range []int{-6, -3, 3, 6} {
-		message := Message{
-			Message:  "Test message",
-			Priority: p,
-		}
-
-		err := message.validate()
-		if err == nil {
-			t.Errorf("Message should not be valid with a %d priority", p)
-		}
-
-		if err != ErrInvalidPriority {
-			t.Errorf("Should get an ErrInvalidPriority")
-		}
-	}
-
-	for _, p := range []int{PriorityLowest, PriorityLow, PriorityNormal, PriorityHigh, PriorityEmergency} {
-		message := Message{
-			Message:  "Test message",
-			Priority: p,
-			Expire:   time.Hour,
-			Retry:    60 * time.Second,
-		}
-
-		err := message.validate()
+func TestMessageValidation(t *testing.T) {
+	// Create random strings to be used in messages
+	randomStringsWithSize := make(map[int]string, 8)
+	for _, size := range []int{
+		MessageMaxLength,
+		MessageMaxLength + 1,
+		MessageTitleMaxLength,
+		MessageTitleMaxLength + 1,
+		MessageURLMaxLength,
+		MessageURLMaxLength + 1,
+		MessageURLTitleMaxLength,
+		MessageURLTitleMaxLength + 1,
+	} {
+		rands, err := getRandomString(size)
 		if err != nil {
-			t.Errorf("Message should be valid with a %d good priority", p)
+			log.Fatalf("failed to create a random string of size %d", size)
 		}
+		randomStringsWithSize[size] = rands
+	}
+
+	tt := []struct {
+		name        string
+		message     Message
+		expectedErr error
+	}{
+		{
+			name: "valid message",
+			message: Message{
+				Message:    "Hello world !",
+				Title:      "Example",
+				DeviceName: "My_Device",
+				URL:        "http://google.com",
+				URLTitle:   "Go check this URL",
+				Priority:   PriorityNormal,
+			},
+			expectedErr: nil,
+		},
+		{
+			name:        "empty message",
+			message:     Message{},
+			expectedErr: ErrMessageEmpty,
+		},
+		{
+			name: "message with valid size",
+			message: Message{
+				Message: randomStringsWithSize[MessageMaxLength],
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "message too long",
+			message: Message{
+				Message: randomStringsWithSize[MessageMaxLength+1],
+			},
+			expectedErr: ErrMessageTooLong,
+		},
+		{
+			name: "message with valid title length",
+			message: Message{
+				Message: "fake message",
+				Title:   randomStringsWithSize[MessageTitleMaxLength],
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "message with too long title",
+			message: Message{
+				Message: "fake message",
+				Title:   randomStringsWithSize[MessageTitleMaxLength+1],
+			},
+			expectedErr: ErrMessageTitleTooLong,
+		},
+		{
+			name: "message with valid URL",
+			message: Message{
+				Message: "fake message",
+				URL:     randomStringsWithSize[MessageURLMaxLength],
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "message with too long URL",
+			message: Message{
+				Message: "fake message",
+				URL:     randomStringsWithSize[MessageURLMaxLength+1],
+			},
+			expectedErr: ErrMessageURLTooLong,
+		},
+		{
+			name: "message with valid URL title",
+			message: Message{
+				Message:  "Test message",
+				URL:      "http://google.com",
+				URLTitle: randomStringsWithSize[MessageURLTitleMaxLength],
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "message with too long URL title",
+			message: Message{
+				Message:  "Test message",
+				URL:      "http://google.com",
+				URLTitle: randomStringsWithSize[MessageURLTitleMaxLength+1],
+			},
+			expectedErr: ErrMessageURLTitleTooLong,
+		},
+		{
+			name: "message with URL without URL title",
+			message: Message{
+				Message:  "Test message",
+				URLTitle: "URL Title",
+			},
+			expectedErr: ErrEmptyURL,
+		},
+		{
+			name: "message with emergency priority without emergency parameters",
+			message: Message{
+				Message:  "Test message",
+				Priority: PriorityEmergency,
+			},
+			expectedErr: ErrMissingEmergencyParameter,
+		},
+		{
+			name: "message with emergency priority",
+			message: Message{
+				Message:  "Test message",
+				Priority: PriorityEmergency,
+				Expire:   time.Hour,
+				Retry:    60 * time.Second,
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "message with invalid priority",
+			message: Message{
+				Message:  "Test message",
+				Priority: 6,
+			},
+			expectedErr: ErrInvalidPriority,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := tc.message.validate(); err != tc.expectedErr {
+				t.Errorf("expected %v; got %v", tc.expectedErr, err)
+			}
+		})
 	}
 }
 
 // TestTokenFormat tests the token format
 func TestTokenFormat(t *testing.T) {
-	// Test empty token
-	p := New("")
-	err := p.validate()
-	if err == nil {
-		t.Errorf("An empty token should not be valid")
+	tt := []struct {
+		name  string
+		token string
+		err   error
+	}{
+		{"empty token", "", ErrEmptyToken},
+		{"invalid token 1", "uQiR-po4DXghDmr9QzzfQu27cmVRsG", ErrInvalidToken},
+		{"invalid token 2", "agznej3rKEVAvPUxu9vvNnqpmZpokzF", ErrInvalidToken},
+		{"valid token 1", "uQiRzpo4DXghDmr9QzzfQu27cmVRsG", nil},
+		{"valid token 2", "gznej3rKEVAvPUxu9vvNnqpmZpokzF", nil},
 	}
 
-	if err != ErrEmptyToken {
-		t.Errorf("Should get an ErrEmptyToken")
-	}
-
-	// Test good token
-	goodTokens := []string{"uQiRzpo4DXghDmr9QzzfQu27cmVRsG", "gznej3rKEVAvPUxu9vvNnqpmZpokzF"}
-	for _, goodToken := range goodTokens {
-		p := New(goodToken)
-		err := p.validate()
-		if err != nil {
-			t.Errorf("Token '%s' should be valid", goodToken)
-		}
-	}
-
-	// Test bad token
-	badTokens := []string{"uQiR-po4DXghDmr9QzzfQu27cmVRsG", "agznej3rKEVAvPUxu9vvNnqpmZpokzF", "test"}
-	for _, badToken := range badTokens {
-		p := New(badToken)
-		err := p.validate()
-		if err == nil {
-			t.Errorf("Token '%s' should not be valid", badToken)
-		}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			p := New(tc.token)
+			if err := p.validate(); err != tc.err {
+				t.Fatalf("expected %v, got %v", tc.err, err)
+			}
+		})
 	}
 }
 
 // TestRecipientTokenFormat tests the token format
 func TestRecipientTokenFormat(t *testing.T) {
-	// Test empty token
-	u := NewRecipient("")
-	err := u.validate()
-	if err == nil {
-		t.Errorf("An empty recipient token should not be valid")
+	tt := []struct {
+		name      string
+		recipient string
+		err       error
+	}{
+		{"empty recipient", "", ErrEmptyRecipientToken},
+		{"invalid recipient 1", "uQiR-po4DXghDmr9QzzfQu27cmVRsG", ErrInvalidRecipientToken},
+		{"invalid recipient 2", "agznej3rKEVAvPUxu9vvNnqpmZpokzF", ErrInvalidRecipientToken},
+		{"valid recipient 1", "uQiRzpo4DXghDmr9QzzfQu27cmVRsG", nil},
+		{"valid recipient 2", "gznej3rKEVAvPUxu9vvNnqpmZpokzF", nil},
 	}
 
-	if err != ErrEmptyRecipientToken {
-		t.Errorf("Should get an ErrEmptyRecipientToken")
-	}
-
-	// Test good token
-	goodTokens := []string{"uQiRzpo4DXghDmr9QzzfQu27cmVRsG", "gznej3rKEVAvPUxu9vvNnqpmZpokzF"}
-	for _, goodToken := range goodTokens {
-		u := NewRecipient(goodToken)
-		err := u.validate()
-		if err != nil {
-			t.Errorf("Token '%s' should be valid", goodToken)
-		}
-	}
-
-	// Test bad token
-	badTokens := []string{"uQiR-po4DXghDmr9QzzfQu27cmVRsG", "agznej3rKEVAvPUxu9vvNnqpmZpokzF", "test"}
-	for _, badToken := range badTokens {
-		u := NewRecipient(badToken)
-		err := u.validate()
-		if err == nil {
-			t.Errorf("Token '%s' should not be valid", badToken)
-		}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			p := NewRecipient(tc.recipient)
+			if err := p.validate(); err != tc.err {
+				t.Fatalf("expected %v, got %v", tc.err, err)
+			}
+		})
 	}
 }
 
 // TestMessageDeviceName tests the message device name format
 func TestMessageDeviceName(t *testing.T) {
-	message := NewMessage("Hello world")
-
-	// Test good device names
-	goodDeviceNames := []string{"yo_mama", "droid-2", "dfasdfasdfasdfasdfasdfasd"}
-	for _, goodDeviceName := range goodDeviceNames {
-		message.DeviceName = goodDeviceName
-		err := message.validate()
-		if err != nil {
-			t.Errorf("Device name '%s' should be valid", goodDeviceName)
-		}
+	tt := []struct {
+		name   string
+		device string
+		err    error
+	}{
+		{"good device name 1", "yo_mama", nil},
+		{"good device name 2", "droid-2", nil},
+		{"good device name 2", "fasdfafdadfasdfa", nil},
+		{"invalid device name 1", "yo&mama", ErrInvalidDeviceName},
+		{"invalid device name 2", "my^device", ErrInvalidDeviceName},
+		{"invalid device name 3", "d34342fasdfasdfasdfasdfasdfasd", ErrInvalidDeviceName},
 	}
 
-	// Test bad device names
-	badDeviceNames := []string{"yo&mama", "super^device", "d34342fasdfasdfasdfasdfasdfasd"}
-	for _, badDeviceName := range badDeviceNames {
-		message.DeviceName = badDeviceName
-		err := message.validate()
-		if err == nil {
-			t.Errorf("Device name '%s' should not be valid", badDeviceName)
-		}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			message := Message{
+				Message:    "Test message",
+				DeviceName: tc.device,
+			}
+			if err := message.validate(); err != tc.err {
+				t.Fatalf("expected %v, got %v", tc.err, err)
+			}
+		})
 	}
 }
 
@@ -378,13 +266,29 @@ func TestNewMessageWithTitle(t *testing.T) {
 		Message: "World",
 	}
 
-	if reflect.DeepEqual(message, expected) == false {
+	if !reflect.DeepEqual(message, expected) {
 		t.Errorf("Invalid message from NewMessage")
 	}
 }
 
 // TestEncodeRequest tests if the url params are encoded properly
 func TestEncodeRequest(t *testing.T) {
+	fakeTime := time.Now()
+	fakeMessage := &Message{
+		Message:     "My awesome message",
+		Title:       "My title",
+		Priority:    PriorityEmergency,
+		URL:         "http://google.com",
+		URLTitle:    "Google",
+		Timestamp:   fakeTime.Unix(),
+		Retry:       60 * time.Second,
+		Expire:      time.Hour,
+		DeviceName:  "SuperDevice",
+		CallbackURL: "http://yourapp.com/callback",
+		Sound:       SoundCosmic,
+		HTML:        true,
+	}
+
 	// Expected arguments
 	expected := &url.Values{}
 	expected.Set("token", fakePushover.token)
@@ -613,7 +517,7 @@ func TestSendMessage(t *testing.T) {
 	defer ts.Close()
 
 	APIEndpoint = ts.URL
-	got, err := fakePushover.SendMessage(fakeMessage, fakeRecipient)
+	got, err := fakePushover.SendMessage(NewMessage("TestMessage"), fakeRecipient)
 	if err != nil {
 		t.Fatalf("expected no error, got %q", err)
 	}
