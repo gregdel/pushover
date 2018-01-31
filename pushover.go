@@ -13,9 +13,14 @@ import (
 	"os"
 	"regexp"
 	"strconv"
-	"strings"
-	"time"
 )
+
+// Regexp validation
+var tokenRegexp *regexp.Regexp
+
+func init() {
+	tokenRegexp = regexp.MustCompile(`^[A-Za-z0-9]{30}$`)
+}
 
 // APIEndpoint is the API base URL for any request
 var APIEndpoint = "https://api.pushover.net/1"
@@ -92,15 +97,6 @@ const (
 	SoundNone         = "none"
 )
 
-// Regexp validation
-var tokenRegexp, recipientRegexp, deviceNameRegexp *regexp.Regexp
-
-func init() {
-	tokenRegexp = regexp.MustCompile(`^[A-Za-z0-9]{30}$`)
-	recipientRegexp = regexp.MustCompile(`^[A-Za-z0-9]{30}$`)
-	deviceNameRegexp = regexp.MustCompile(`^[A-Za-z0-9_-]{1,25}$`)
-}
-
 // Pushover is the representation of an app using the pushover API
 type Pushover struct {
 	token string
@@ -111,118 +107,10 @@ func New(token string) *Pushover {
 	return &Pushover{token}
 }
 
-// Errors represents the errors returned by pushover
-type Errors []string
-
-// Error represents the error as a string
-func (e Errors) Error() string {
-	ret := ""
-	if len(e) > 0 {
-		ret = fmt.Sprintf("Errors:\n")
-		ret += strings.Join(e, "\n")
-	}
-	return ret
-}
-
 // Request to the API
 type Request struct {
 	Message   *Message
 	Recipient *Recipient
-}
-
-// Response represents a response from the API
-type Response struct {
-	Status  int    `json:"status"`
-	ID      string `json:"request"`
-	Errors  Errors `json:"errors"`
-	Receipt string `json:"receipt"`
-	Limit   *Limit
-}
-
-// Limit represents the limitation of the application. This information is
-// fetched when posting a new message.
-//	Headers example:
-//		X-Limit-App-Limit: 7500
-// 		X-Limit-App-Remaining: 7496
-// 		X-Limit-App-Reset: 1393653600
-type Limit struct {
-	// Total number of messages you can send during a month
-	Total int
-	// Remaining number of messages you can send until the next reset
-	Remaining int
-	// NextReset is the time when all the app counters will be reseted
-	NextReset time.Time
-}
-
-func newLimit(headers http.Header) (*Limit, error) {
-	headersStrings := []string{
-		"X-Limit-App-Limit",
-		"X-Limit-App-Remaining",
-		"X-Limit-App-Reset",
-	}
-	headersValues := map[string]int{}
-
-	for _, header := range headersStrings {
-		// Check if the header is present
-		h, ok := headers[header]
-		if !ok {
-			return nil, ErrInvalidHeaders
-		}
-
-		// The header must have only one element
-		if len(h) != 1 {
-			return nil, ErrInvalidHeaders
-		}
-
-		i, err := strconv.Atoi(h[0])
-		if err != nil {
-			return nil, err
-		}
-
-		headersValues[header] = i
-	}
-
-	return &Limit{
-		Total:     headersValues["X-Limit-App-Limit"],
-		Remaining: headersValues["X-Limit-App-Remaining"],
-		NextReset: time.Unix(int64(headersValues["X-Limit-App-Reset"]), 0),
-	}, nil
-}
-
-// String represents a printable form of the response
-func (r Response) String() string {
-	ret := fmt.Sprintf("Request id: %s", r.ID)
-	if r.Receipt != "" {
-		ret += fmt.Sprintf("\nReceipt: %s", r.Receipt)
-	}
-	if r.Limit != nil {
-		ret += fmt.Sprintf("\nUsage %d/%d messages - Next reset : %s", r.Limit.Remaining, r.Limit.Total, r.Limit.NextReset)
-	}
-	return ret
-}
-
-// Recipient represents the a recipient to notify
-type Recipient struct {
-	token string
-}
-
-// Validates recipient token
-func (u *Recipient) validate() error {
-	// Check empty token
-	if u.token == "" {
-		return ErrEmptyRecipientToken
-	}
-
-	// Check invalid token
-	if recipientRegexp.MatchString(u.token) == false {
-		return ErrInvalidRecipientToken
-	}
-	return nil
-}
-
-// NewRecipient is the representation of the recipient to notify
-func NewRecipient(token string) *Recipient {
-	return &Recipient{token}
 }
 
 // SendMessage is used to send message to a recipient
@@ -250,104 +138,6 @@ func (p *Pushover) validate() error {
 	if tokenRegexp.MatchString(p.token) == false {
 		return ErrInvalidToken
 	}
-	return nil
-}
-
-// Message represents the infos a
-type Message struct {
-	// Required
-	Message string
-
-	// Optional
-	Title       string
-	Priority    int
-	URL         string
-	URLTitle    string
-	Timestamp   int64
-	Retry       time.Duration
-	Expire      time.Duration
-	CallbackURL string
-	DeviceName  string
-	Sound       string
-	HTML        bool
-
-	// Attachment file path
-	AttachmentPath string
-}
-
-// NewMessage returns a simple new message
-func NewMessage(message string) *Message {
-	return &Message{Message: message}
-}
-
-// NewMessageWithTitle returns a simple new message with a title
-func NewMessageWithTitle(message, title string) *Message {
-	return &Message{Message: message, Title: title}
-}
-
-// Validate the message values
-func (m *Message) validate() error {
-	// Message should no be empty
-	if m.Message == "" {
-		return ErrMessageEmpty
-	}
-
-	// Validate message length
-	if len(m.Message) > MessageMaxLength {
-		return ErrMessageTooLong
-	}
-
-	// Validate Title field length
-	if len(m.Title) > MessageTitleMaxLength {
-		return ErrMessageTitleTooLong
-	}
-
-	// Validate URL field
-	if len(m.URL) > MessageURLMaxLength {
-		return ErrMessageURLTooLong
-	}
-
-	// Validate URL title field
-	if len(m.URLTitle) > MessageURLTitleMaxLength {
-		return ErrMessageURLTitleTooLong
-	}
-
-	// URLTitle should not be set with an empty URL
-	if m.URL == "" && m.URLTitle != "" {
-		return ErrEmptyURL
-	}
-
-	// Validate priorities
-	if m.Priority > PriorityEmergency || m.Priority < PriorityLowest {
-		return ErrInvalidPriority
-	}
-
-	// Validate emergency priority
-	if m.Priority == PriorityEmergency {
-		if m.Retry == 0 || m.Expire == 0 {
-			return ErrMissingEmergencyParameter
-		}
-	}
-
-	// Test device name
-	if m.DeviceName != "" {
-		if deviceNameRegexp.MatchString(m.DeviceName) == false {
-			return ErrInvalidDeviceName
-		}
-	}
-
-	// Test file attachement
-	if m.AttachmentPath != "" {
-		stat, err := os.Stat(m.AttachmentPath)
-		if err != nil {
-			return ErrInvalidAttachementPath
-		}
-
-		if stat.Size() > MessageMaxAttachementByte {
-			return ErrMessageAttachementTooLarge
-		}
-	}
-
 	return nil
 }
 
@@ -419,20 +209,6 @@ func (p *Pushover) encodeRequest(message *Message, recipient *Recipient) (map[st
 	return params, nil
 }
 
-// ReceiptDetails represents the receipt informations in case of emergency priority
-type ReceiptDetails struct {
-	Status          int
-	Acknowledged    bool
-	AcknowledgedBy  string
-	Expired         bool
-	CalledBack      bool
-	ID              string
-	AcknowledgedAt  *time.Time
-	LastDeliveredAt *time.Time
-	ExpiresAt       *time.Time
-	CalledBackAt    *time.Time
-}
-
 // GetReceiptDetails return detailed informations about a receipt. This is used
 // used to check the acknowledged status of an Emergency notification.
 func (p *Pushover) GetReceiptDetails(receipt string) (*ReceiptDetails, error) {
@@ -455,90 +231,6 @@ func (p *Pushover) GetReceiptDetails(receipt string) (*ReceiptDetails, error) {
 	}
 
 	return details, nil
-}
-
-// UnmarshalJSON is a custom unmarshal function to handle timestamps and
-// boolean as int and convert them to the right type
-func (r *ReceiptDetails) UnmarshalJSON(data []byte) error {
-	dataBytes := bytes.NewReader(data)
-	var aux struct {
-		ID              string     `json:"request"`
-		Status          int        `json:"status"`
-		Acknowledged    intBool    `json:"acknowledged"`
-		AcknowledgedBy  string     `json:"acknowledged_by"`
-		Expired         intBool    `json:"expired"`
-		CalledBack      intBool    `json:"called_back"`
-		AcknowledgedAt  *timestamp `json:"acknowledged_at"`
-		LastDeliveredAt *timestamp `json:"last_delivered_at"`
-		ExpiresAt       *timestamp `json:"expires_at"`
-		CalledBackAt    *timestamp `json:"called_back_at"`
-	}
-
-	// Decode json into the aux struct
-	if err := json.NewDecoder(dataBytes).Decode(&aux); err != nil {
-		return err
-	}
-
-	// Set the RecipientDetails with the right types
-	r.Status = aux.Status
-	r.Acknowledged = bool(aux.Acknowledged)
-	r.AcknowledgedBy = aux.AcknowledgedBy
-	r.Expired = bool(aux.Expired)
-	r.CalledBack = bool(aux.CalledBack)
-	r.ID = aux.ID
-	r.AcknowledgedAt = aux.AcknowledgedAt.Time
-	r.LastDeliveredAt = aux.LastDeliveredAt.Time
-	r.ExpiresAt = aux.ExpiresAt.Time
-	r.CalledBackAt = aux.CalledBackAt.Time
-
-	return nil
-}
-
-// Helper to unmarshal a timestamp as string to a time.Time
-type timestamp struct{ *time.Time }
-
-func (t *timestamp) UnmarshalJSON(data []byte) error {
-	var i int64
-	if err := json.Unmarshal(data, &i); err != nil {
-		return err
-	}
-
-	if i > 0 {
-		unixTime := time.Unix(i, 0)
-		*t = timestamp{&unixTime}
-	}
-
-	return nil
-}
-
-// Helper to unmarshal a int as a boolean
-type intBool bool
-
-func (i *intBool) UnmarshalJSON(data []byte) error {
-	var v int64
-	if err := json.Unmarshal(data, &v); err != nil {
-		return err
-	}
-
-	switch v {
-	case 0:
-		*i = false
-	case 1:
-		*i = true
-	default:
-		return fmt.Errorf("Failed to unmarshal int to bool")
-	}
-
-	return nil
-}
-
-// RecipientDetails represents the receipt informations in case of emergency priority
-type RecipientDetails struct {
-	Status    int      `json:"status"`
-	Group     int      `json:"group"`
-	Devices   []string `json:"devices"`
-	RequestID string   `json:"request"`
-	Errors    Errors   `json:"errors"`
 }
 
 // GetRecipientDetails allows to check if a recipient exists, if it's a group
