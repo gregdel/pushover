@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -20,23 +22,25 @@ var APIEndpoint = "https://api.pushover.net/1"
 
 // Pushover custom errors
 var (
-	ErrHTTPPushover              = errors.New("pushover: http error")
-	ErrEmptyToken                = errors.New("pushover: empty API token")
-	ErrEmptyURL                  = errors.New("pushover: empty URL, URLTitle needs an URL")
-	ErrEmptyRecipientToken       = errors.New("pushover: empty recipient token")
-	ErrInvalidRecipientToken     = errors.New("pushover: invalid recipient token")
-	ErrInvalidRecipient          = errors.New("pushover: invalid recipient")
-	ErrInvalidHeaders            = errors.New("pushover: invalid headers in server response")
-	ErrInvalidPriority           = errors.New("pushover: invalid priority")
-	ErrInvalidToken              = errors.New("pushover: invalid API token")
-	ErrMessageEmpty              = errors.New("pushover: message empty")
-	ErrMessageTitleTooLong       = errors.New("pushover: message title too long")
-	ErrMessageTooLong            = errors.New("pushover: message too long")
-	ErrMessageURLTitleTooLong    = errors.New("pushover: message URL title too long")
-	ErrMessageURLTooLong         = errors.New("pushover: message URL too long")
-	ErrMissingEmergencyParameter = errors.New("pushover: missing emergency parameter")
-	ErrInvalidDeviceName         = errors.New("pushover: invalid device name")
-	ErrEmptyReceipt              = errors.New("pushover: empty receipt")
+	ErrHTTPPushover               = errors.New("pushover: http error")
+	ErrEmptyToken                 = errors.New("pushover: empty API token")
+	ErrEmptyURL                   = errors.New("pushover: empty URL, URLTitle needs an URL")
+	ErrEmptyRecipientToken        = errors.New("pushover: empty recipient token")
+	ErrInvalidRecipientToken      = errors.New("pushover: invalid recipient token")
+	ErrInvalidRecipient           = errors.New("pushover: invalid recipient")
+	ErrInvalidHeaders             = errors.New("pushover: invalid headers in server response")
+	ErrInvalidPriority            = errors.New("pushover: invalid priority")
+	ErrInvalidToken               = errors.New("pushover: invalid API token")
+	ErrMessageEmpty               = errors.New("pushover: message empty")
+	ErrMessageTitleTooLong        = errors.New("pushover: message title too long")
+	ErrMessageTooLong             = errors.New("pushover: message too long")
+	ErrMessageAttachementTooLarge = errors.New("pushover: message attachement is too large")
+	ErrMessageURLTitleTooLong     = errors.New("pushover: message URL title too long")
+	ErrMessageURLTooLong          = errors.New("pushover: message URL too long")
+	ErrMissingEmergencyParameter  = errors.New("pushover: missing emergency parameter")
+	ErrInvalidDeviceName          = errors.New("pushover: invalid device name")
+	ErrEmptyReceipt               = errors.New("pushover: empty receipt")
+	ErrInvalidAttachementPath     = errors.New("pushover: invalid attachement path")
 )
 
 // API limitations
@@ -49,6 +53,8 @@ const (
 	MessageURLMaxLength = 512
 	// MessageURLTitleMaxLength is the max URL title number of characters
 	MessageURLTitleMaxLength = 100
+	// MessageMaxAttachementByte is the max attachement size in byte
+	MessageMaxAttachementByte = 2621440
 )
 
 // Message priorities
@@ -224,13 +230,13 @@ func (p *Pushover) SendMessage(message *Message, recipient *Recipient) (*Respons
 	url := fmt.Sprintf("%s/messages.json", APIEndpoint)
 
 	// Encode params and perform data validation
-	urlValues, err := p.encodeRequest(message, recipient)
+	params, err := p.encodeRequest(message, recipient)
 	if err != nil {
 		return nil, err
 	}
 
 	// Post the from and check the headers of the response
-	return p.postForm(url, urlValues, true)
+	return p.postForm(url, params, true)
 }
 
 // Validate Pushover token
@@ -264,6 +270,9 @@ type Message struct {
 	DeviceName  string
 	Sound       string
 	HTML        bool
+
+	// Attachment file path
+	AttachmentPath string
 }
 
 // NewMessage returns a simple new message
@@ -327,6 +336,18 @@ func (m *Message) validate() error {
 		}
 	}
 
+	// Test file attachement
+	if m.AttachmentPath != "" {
+		stat, err := os.Stat(m.AttachmentPath)
+		if err != nil {
+			return ErrInvalidAttachementPath
+		}
+
+		if stat.Size() > MessageMaxAttachementByte {
+			return ErrMessageAttachementTooLarge
+		}
+	}
+
 	return nil
 }
 
@@ -381,6 +402,10 @@ func (p *Pushover) encodeRequest(message *Message, recipient *Recipient) (map[st
 
 	if message.HTML {
 		params["html"] = "1"
+	}
+
+	if message.AttachmentPath != "" {
+		params["attachment_path"] = message.AttachmentPath
 	}
 
 	if message.Priority == PriorityEmergency {
@@ -567,6 +592,32 @@ func (p *Pushover) postForm(url string, params map[string]string, returnHeaders 
 
 	// Write the body as multipart form data
 	w := multipart.NewWriter(body)
+
+	// Handle file upload
+	filePath, ok := params["attachment_path"]
+	if ok {
+		// Remove the path from the params
+		delete(params, "attachment_path")
+
+		file, err := os.Open(filePath)
+		if err != nil {
+			return nil, err
+		}
+		defer file.Close()
+
+		// Write the file in the body
+		fw, err := w.CreateFormFile("attachment", "poster")
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = io.Copy(fw, file)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Handle params
 	for k, v := range params {
 		if err := w.WriteField(k, v); err != nil {
 			return nil, err
