@@ -1,12 +1,10 @@
 package pushover
 
 import (
-	"bytes"
 	"encoding/json"
-	"io"
-	"mime/multipart"
 	"net/http"
-	"os"
+	"net/url"
+	"strings"
 )
 
 func do(req *http.Request, resType interface{}, returnHeaders bool) error {
@@ -53,52 +51,18 @@ func do(req *http.Request, resType interface{}, returnHeaders bool) error {
 	return nil
 }
 
-// multipartRequest returns a new multipart request
-func multipartRequest(method, url string, params map[string]string) (*http.Request, error) {
-	body := &bytes.Buffer{}
-
-	// Write the body as multipart form data
-	w := multipart.NewWriter(body)
-
-	// Handle file upload
-	filePath, ok := params["attachment_path"]
-	if ok {
-		// Remove the path from the params
-		delete(params, "attachment_path")
-
-		file, err := os.Open(filePath)
-		if err != nil {
-			return nil, err
-		}
-		defer file.Close()
-
-		// Write the file in the body
-		fw, err := w.CreateFormFile("attachment", "poster")
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = io.Copy(fw, file)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Handle params
+// urlEncodedRequest returns a new url encoded request
+func newURLEncodedRequest(method, endpoint string, params map[string]string) (*http.Request, error) {
+	urlValues := url.Values{}
 	for k, v := range params {
-		if err := w.WriteField(k, v); err != nil {
-			return nil, err
-		}
-	}
-	if err := w.Close(); err != nil {
-		return nil, err
+		urlValues.Add(k, v)
 	}
 
-	req, err := http.NewRequest(method, url, body)
+	req, err := http.NewRequest(method, endpoint, strings.NewReader(urlValues.Encode()))
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", w.FormDataContentType())
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	return req, nil
 }

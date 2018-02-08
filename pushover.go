@@ -6,9 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"regexp"
-	"strings"
 )
 
 // Regexp validation
@@ -38,10 +36,10 @@ var (
 	ErrMessageAttachementTooLarge = errors.New("pushover: message attachement is too large")
 	ErrMessageURLTitleTooLong     = errors.New("pushover: message URL title too long")
 	ErrMessageURLTooLong          = errors.New("pushover: message URL too long")
+	ErrMissingAttachement         = errors.New("pushover: missing attachement")
 	ErrMissingEmergencyParameter  = errors.New("pushover: missing emergency parameter")
 	ErrInvalidDeviceName          = errors.New("pushover: invalid device name")
 	ErrEmptyReceipt               = errors.New("pushover: empty receipt")
-	ErrInvalidAttachementPath     = errors.New("pushover: invalid attachement path")
 )
 
 // API limitations
@@ -117,32 +115,8 @@ func (p *Pushover) validate() error {
 	return nil
 }
 
-// SendMessage is used to send message to a recipient
+// SendMessage is used to send message to a recipient.
 func (p *Pushover) SendMessage(message *Message, recipient *Recipient) (*Response, error) {
-	url := fmt.Sprintf("%s/messages.json", APIEndpoint)
-
-	// Encode params and perform data validation
-	params, err := p.encodeRequest(message, recipient)
-	if err != nil {
-		return nil, err
-	}
-
-	// Post the from and check the headers of the response
-	req, err := multipartRequest("POST", url, params)
-	if err != nil {
-		return nil, err
-	}
-
-	resp := &Response{}
-	if err := do(req, resp, true); err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-}
-
-// Encode pushover request and validate each data before sending
-func (p *Pushover) encodeRequest(message *Message, recipient *Recipient) (map[string]string, error) {
 	// Validate pushover
 	if err := p.validate(); err != nil {
 		return nil, err
@@ -158,12 +132,7 @@ func (p *Pushover) encodeRequest(message *Message, recipient *Recipient) (map[st
 		return nil, err
 	}
 
-	// Create the url values
-	params := message.toMap()
-	params["token"] = p.token
-	params["user"] = recipient.token
-
-	return params, nil
+	return message.send(p.token, recipient.token)
 }
 
 // GetReceiptDetails return detailed informations about a receipt. This is used
@@ -206,16 +175,11 @@ func (p *Pushover) GetRecipientDetails(recipient *Recipient) (*RecipientDetails,
 		return nil, err
 	}
 
-	// Send request
-	urlValues := url.Values{}
-	urlValues.Add("token", p.token)
-	urlValues.Add("user", recipient.token)
-
-	req, err := http.NewRequest("GET", endpoint, strings.NewReader(urlValues.Encode()))
+	req, err := newURLEncodedRequest("POST", endpoint,
+		map[string]string{"token": p.token, "user": recipient.token})
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	var response RecipientDetails
 	if err := do(req, &response, false); err != nil {
@@ -231,15 +195,10 @@ func (p *Pushover) GetRecipientDetails(recipient *Recipient) (*RecipientDetails,
 func (p *Pushover) CancelEmergencyNotification(receipt string) (*Response, error) {
 	endpoint := fmt.Sprintf("%s/receipts/%s/cancel.json", APIEndpoint, receipt)
 
-	// Send request
-	urlValues := url.Values{}
-	urlValues.Add("token", p.token)
-
-	req, err := http.NewRequest("GET", endpoint, strings.NewReader(urlValues.Encode()))
+	req, err := newURLEncodedRequest("GET", endpoint, map[string]string{"token": p.token})
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	response := &Response{}
 	if err := do(req, response, false); err != nil {

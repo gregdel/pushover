@@ -74,11 +74,7 @@ func TestEncodeRequest(t *testing.T) {
 	}
 
 	// Encode request
-	result, err := fakePushover.encodeRequest(fakeMessage, fakeRecipient)
-	if err != nil {
-		t.Errorf("Failed to encode request")
-	}
-
+	result := fakeMessage.toMap(fakePushover.token, fakeRecipient.token)
 	if reflect.DeepEqual(result, expected) == false {
 		t.Errorf("Invalid message from NewMessage")
 	}
@@ -129,14 +125,15 @@ func TestPostFormErrors(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	req, err := http.NewRequest("GET", ts.URL, nil)
+	req, err := http.NewRequest("POST", ts.URL, nil)
 	if err != nil {
 		t.Fatalf("failed to create request: %v", err)
 	}
 
 	got := &Response{}
-	if err := do(req, got, true); err != nil {
-		t.Fatalf("failed to do request: %v", err)
+	err = do(req, got, true)
+	if err == nil {
+		t.Fatalf("expected an error, got nil")
 	}
 
 	expected := Errors{"error1", "error2"}
@@ -174,22 +171,24 @@ func TestGetRecipienDetails(t *testing.T) {
 // TestGetRecipienDetailsError
 func TestGetRecipienDetailsError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, `{"status":0,"request":"e460545a8b333d0da2f3602aff3133d6"}`)
+		fmt.Fprintln(w, `{"status":0,"request":"e460545a8b333d0da2f3602aff3133d6", "errors": ["user key is invalid"]}`)
 	}))
 	defer ts.Close()
 
 	APIEndpoint = ts.URL
 	got, err := fakePushover.GetRecipientDetails(fakeRecipient)
-	if got != nil {
-		t.Fatalf("expected no recipient details, got %q", got)
+	if err != nil {
+		t.Fatalf("expected no error, got %q", err)
 	}
 
-	if err == nil {
-		t.Fatalf("expected an error")
+	expected := &RecipientDetails{
+		Status:    0,
+		RequestID: "e460545a8b333d0da2f3602aff3133d6",
+		Errors:    Errors{"user key is invalid"},
 	}
 
-	if err != ErrInvalidRecipient {
-		t.Fatalf("expected %q, got %q", ErrInvalidRecipient, got)
+	if reflect.DeepEqual(got, expected) == false {
+		t.Errorf("unexpected recipient details\nExpected:\t%v\nGot\t%v", expected, got)
 	}
 }
 
