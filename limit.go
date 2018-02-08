@@ -13,11 +13,11 @@ import (
 // 		X-Limit-App-Remaining: 7496
 // 		X-Limit-App-Reset: 1393653600
 type Limit struct {
-	// Total number of messages you can send during a month
+	// Total number of messages you can send during a month.
 	Total int
-	// Remaining number of messages you can send until the next reset
+	// Remaining number of messages you can send until the next reset.
 	Remaining int
-	// NextReset is the time when all the app counters will be reseted
+	// NextReset is the time when all the app counters will be reseted.
 	NextReset time.Time
 }
 

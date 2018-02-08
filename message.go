@@ -39,24 +39,24 @@ type Message struct {
 	attachment io.Reader
 }
 
-// NewMessage returns a simple new message
+// NewMessage returns a simple new message.
 func NewMessage(message string) *Message {
 	return &Message{Message: message}
 }
 
-// NewMessageWithTitle returns a simple new message with a title
+// NewMessageWithTitle returns a simple new message with a title.
 func NewMessageWithTitle(message, title string) *Message {
 	return &Message{Message: message, Title: title}
 }
 
 // AddAttachment adds an attachment to the message it's programmer's
-// responsibility to close the reader
+// responsibility to close the reader.
 func (m *Message) AddAttachment(attachment io.Reader) error {
 	m.attachment = attachment
 	return nil
 }
 
-// Validate the message values
+// Validate the message values.
 func (m *Message) validate() error {
 	// Message should no be empty
 	if m.Message == "" {
@@ -110,7 +110,7 @@ func (m *Message) validate() error {
 	return nil
 }
 
-// Return a map filled with the relevant data
+// Return a map filled with the relevant data.
 func (m *Message) toMap(pToken, rToken string) map[string]string {
 	ret := map[string]string{
 		"token":    pToken,
@@ -185,7 +185,7 @@ func (m *Message) send(pToken, rToken string) (*Response, error) {
 	return resp, nil
 }
 
-// multipartRequest returns a new multipart POST request with a file attached
+// multipartRequest returns a new multipart POST request with a file attached.
 func (m *Message) multipartRequest(pToken, rToken, url string) (*http.Request, error) {
 	body := &bytes.Buffer{}
 
@@ -231,7 +231,7 @@ func (m *Message) multipartRequest(pToken, rToken, url string) (*http.Request, e
 	return req, nil
 }
 
-// urlEncodedRequest returns a new url encoded request
+// urlEncodedRequest returns a new url encoded request.
 func (m *Message) urlEncodedRequest(pToken, rToken, endpoint string) (*http.Request, error) {
 	return newURLEncodedRequest("POST", endpoint, m.toMap(pToken, rToken))
 }

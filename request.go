@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// do is a generic function to send a request to the API.
 func do(req *http.Request, resType interface{}, returnHeaders bool) error {
 	client := http.DefaultClient
 
@@ -51,7 +52,7 @@ func do(req *http.Request, resType interface{}, returnHeaders bool) error {
 	return nil
 }
 
-// urlEncodedRequest returns a new url encoded request
+// urlEncodedRequest returns a new url encoded request.
 func newURLEncodedRequest(method, endpoint string, params map[string]string) (*http.Request, error) {
 	urlValues := url.Values{}
 	for k, v := range params {

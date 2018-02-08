@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Helper to unmarshal a timestamp as string to a time.Time
+// Helper to unmarshal a timestamp as string to a time.Time.
 type timestamp struct{ *time.Time }
 
 func (t *timestamp) UnmarshalJSON(data []byte) error {
@@ -23,7 +23,7 @@ func (t *timestamp) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Helper to unmarshal a int as a boolean
+// Helper to unmarshal a int as a boolean.
 type intBool bool
 
 func (i *intBool) UnmarshalJSON(data []byte) error {
