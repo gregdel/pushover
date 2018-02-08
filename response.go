@@ -2,7 +2,7 @@ package pushover
 
 import "fmt"
 
-// Response represents a response from the API
+// Response represents a response from the API.
 type Response struct {
 	Status  int    `json:"status"`
 	ID      string `json:"request"`
@@ -11,7 +11,7 @@ type Response struct {
 	Limit   *Limit
 }
 
-// String represents a printable form of the response
+// String represents a printable form of the response.
 func (r Response) String() string {
 	ret := fmt.Sprintf("Request id: %s\n", r.ID)
 	if r.Receipt != "" {

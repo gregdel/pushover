@@ -6,7 +6,8 @@ import (
 	"time"
 )
 
-// ReceiptDetails represents the receipt informations in case of emergency priority
+// ReceiptDetails represents the receipt informations in case of emergency
+// priority.
 type ReceiptDetails struct {
 	Status          int
 	Acknowledged    bool
@@ -21,7 +22,7 @@ type ReceiptDetails struct {
 }
 
 // UnmarshalJSON is a custom unmarshal function to handle timestamps and
-// boolean as int and convert them to the right type
+// boolean as int and convert them to the right type.
 func (r *ReceiptDetails) UnmarshalJSON(data []byte) error {
 	dataBytes := bytes.NewReader(data)
 	var aux struct {

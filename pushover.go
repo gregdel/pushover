@@ -9,17 +9,17 @@ import (
 	"regexp"
 )
 
-// Regexp validation
+// Regexp validation.
 var tokenRegexp *regexp.Regexp
 
 func init() {
 	tokenRegexp = regexp.MustCompile(`^[A-Za-z0-9]{30}$`)
 }
 
-// APIEndpoint is the API base URL for any request
+// APIEndpoint is the API base URL for any request.
 var APIEndpoint = "https://api.pushover.net/1"
 
-// Pushover custom errors
+// Pushover custom errors.
 var (
 	ErrHTTPPushover               = errors.New("pushover: http error")
 	ErrEmptyToken                 = errors.New("pushover: empty API token")
@@ -42,17 +42,17 @@ var (
 	ErrEmptyReceipt               = errors.New("pushover: empty receipt")
 )
 
-// API limitations
+// API limitations.
 const (
-	// MessageMaxLength is the max message number of characters
+	// MessageMaxLength is the max message number of characters.
 	MessageMaxLength = 1024
-	// MessageTitleMaxLength is the max title number of characters
+	// MessageTitleMaxLength is the max title number of characters.
 	MessageTitleMaxLength = 250
-	// MessageURLMaxLength is the max URL number of characters
+	// MessageURLMaxLength is the max URL number of characters.
 	MessageURLMaxLength = 512
-	// MessageURLTitleMaxLength is the max URL title number of characters
+	// MessageURLTitleMaxLength is the max URL title number of characters.
 	MessageURLTitleMaxLength = 100
-	// MessageMaxAttachementByte is the max attachement size in byte
+	// MessageMaxAttachementByte is the max attachement size in byte.
 	MessageMaxAttachementByte = 2621440
 )
 
@@ -91,17 +91,17 @@ const (
 	SoundNone         = "none"
 )
 
-// Pushover is the representation of an app using the pushover API
+// Pushover is the representation of an app using the pushover API.
 type Pushover struct {
 	token string
 }
 
-// New returns a new app to talk to the pushover API
+// New returns a new app to talk to the pushover API.
 func New(token string) *Pushover {
 	return &Pushover{token}
 }
 
-// Validate Pushover token
+// Validate Pushover token.
 func (p *Pushover) validate() error {
 	// Check empty token
 	if p.token == "" {

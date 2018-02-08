@@ -8,17 +8,17 @@ func init() {
 	recipientRegexp = regexp.MustCompile(`^[A-Za-z0-9]{30}$`)
 }
 
-// Recipient represents the a recipient to notify
+// Recipient represents the a recipient to notify.
 type Recipient struct {
 	token string
 }
 
-// NewRecipient is the representation of the recipient to notify
+// NewRecipient is the representation of the recipient to notify.
 func NewRecipient(token string) *Recipient {
 	return &Recipient{token}
 }
 
-// Validates recipient token
+// Validates recipient token.
 func (r *Recipient) validate() error {
 	// Check empty token
 	if r.token == "" {
@@ -32,7 +32,8 @@ func (r *Recipient) validate() error {
 	return nil
 }
 
-// RecipientDetails represents the receipt informations in case of emergency priority
+// RecipientDetails represents the receipt informations in case of emergency
+// priority.
 type RecipientDetails struct {
 	Status    int      `json:"status"`
 	Group     int      `json:"group"`
