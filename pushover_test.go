@@ -95,10 +95,14 @@ func TestValidPostForm(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	p := &Pushover{}
-	got, err := p.postForm(ts.URL, map[string]string{}, true)
+	req, err := http.NewRequest("GET", ts.URL, nil)
 	if err != nil {
-		t.Fatalf("expected no error, got %q", err)
+		t.Fatalf("failed to create request: %v", err)
+	}
+
+	got := &Response{}
+	if err := do(req, got, true); err != nil {
+		t.Fatalf("failed to do request: %v", err)
 	}
 
 	expected := &Response{
@@ -125,10 +129,14 @@ func TestPostFormErrors(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	p := &Pushover{}
-	got, err := p.postForm(ts.URL, map[string]string{}, false)
-	if got != nil {
-		t.Fatalf("expected no result, got %q", got)
+	req, err := http.NewRequest("GET", ts.URL, nil)
+	if err != nil {
+		t.Fatalf("failed to create request: %v", err)
+	}
+
+	got := &Response{}
+	if err := do(req, got, true); err != nil {
+		t.Fatalf("failed to do request: %v", err)
 	}
 
 	expected := Errors{"error1", "error2"}
