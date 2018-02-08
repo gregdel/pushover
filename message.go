@@ -197,7 +197,7 @@ func (m *Message) multipartRequest(pToken, rToken, url string) (*http.Request, e
 	w := multipart.NewWriter(body)
 
 	// Write the file in the body
-	fw, err := w.CreateFormFile("attachment", "poster")
+	fw, err := w.CreateFormFile("attachment", "attachment")
 	if err != nil {
 		return nil, err
 	}

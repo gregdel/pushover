@@ -1,6 +1,7 @@
 package pushover
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"log"
@@ -221,5 +222,84 @@ func TestNewMessageWithTitle(t *testing.T) {
 
 	if !reflect.DeepEqual(message, expected) {
 		t.Errorf("Invalid message from NewMessage")
+	}
+}
+
+// TestMutlipartRequest
+func TestMutlipartRequest(t *testing.T) {
+	tt := []struct {
+		name           string
+		attachmentSize int64
+		expectedErr    error
+	}{
+		{
+			name:           "valid multipart form",
+			attachmentSize: 16,
+		},
+		{
+			name:           "no attachement",
+			expectedErr:    ErrMissingAttachement,
+			attachmentSize: 0,
+		},
+		{
+			name:           "no attachement",
+			expectedErr:    ErrMessageAttachementTooLarge,
+			attachmentSize: MessageMaxAttachementByte + 1,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			message := NewMessageWithTitle("World", "Hello")
+
+			if tc.attachmentSize > 0 {
+				buf := make([]byte, tc.attachmentSize)
+				attachement := bytes.NewBuffer(buf)
+				message.AddAttachment(attachement)
+			}
+
+			req, err := message.multipartRequest("pToken", "rToken", "url")
+			if err != tc.expectedErr {
+				t.Fatalf("expected %q, got %q", tc.expectedErr, err)
+			}
+
+			if err != nil {
+				return
+			}
+
+			if err := req.ParseMultipartForm(tc.attachmentSize * 2); err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+
+			expectedValues := map[string][]string{
+				"token":    {"pToken"},
+				"user":     {"rToken"},
+				"message":  {"World"},
+				"priority": {"0"},
+				"title":    {"Hello"},
+			}
+
+			if !reflect.DeepEqual(req.MultipartForm.Value, expectedValues) {
+				t.Fatalf("Invalid form values, expected %v, got %v", expectedValues, req.MultipartForm.Value)
+			}
+
+			fileHeaders, ok := req.MultipartForm.File["attachment"]
+			if !ok {
+				t.Fatalf("expected an attachment, got nothing")
+			}
+
+			if len(fileHeaders) != 1 {
+				t.Fatalf("expected one attachment, got %d", len(fileHeaders))
+			}
+
+			fileHeader := fileHeaders[0]
+			if fileHeader.Filename != "attachment" {
+				t.Fatalf("invalid attachment name: %s", fileHeader.Filename)
+			}
+
+			if fileHeader.Size != tc.attachmentSize {
+				t.Fatalf("invalid attachment size, expected %d, got %d", tc.attachmentSize, fileHeader.Size)
+			}
+		})
 	}
 }
