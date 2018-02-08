@@ -2,16 +2,13 @@
 package pushover
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"mime/multipart"
 	"net/http"
 	"net/url"
-	"os"
 	"regexp"
+	"strings"
 )
 
 // Regexp validation
@@ -106,10 +103,18 @@ func New(token string) *Pushover {
 	return &Pushover{token}
 }
 
-// Request to the API
-type Request struct {
-	Message   *Message
-	Recipient *Recipient
+// Validate Pushover token
+func (p *Pushover) validate() error {
+	// Check empty token
+	if p.token == "" {
+		return ErrEmptyToken
+	}
+
+	// Check invalid token
+	if tokenRegexp.MatchString(p.token) == false {
+		return ErrInvalidToken
+	}
+	return nil
 }
 
 // SendMessage is used to send message to a recipient
@@ -123,21 +128,17 @@ func (p *Pushover) SendMessage(message *Message, recipient *Recipient) (*Respons
 	}
 
 	// Post the from and check the headers of the response
-	return p.postForm(url, params, true)
-}
-
-// Validate Pushover token
-func (p *Pushover) validate() error {
-	// Check empty token
-	if p.token == "" {
-		return ErrEmptyToken
+	req, err := multipartRequest("POST", url, params)
+	if err != nil {
+		return nil, err
 	}
 
-	// Check invalid token
-	if tokenRegexp.MatchString(p.token) == false {
-		return ErrInvalidToken
+	resp := &Response{}
+	if err := do(req, resp, true); err != nil {
+		return nil, err
 	}
-	return nil
+
+	return resp, nil
 }
 
 // Encode pushover request and validate each data before sending
@@ -209,106 +210,19 @@ func (p *Pushover) GetRecipientDetails(recipient *Recipient) (*RecipientDetails,
 	urlValues := url.Values{}
 	urlValues.Add("token", p.token)
 	urlValues.Add("user", recipient.token)
-	resp, err := http.PostForm(endpoint, urlValues)
+
+	req, err := http.NewRequest("GET", endpoint, strings.NewReader(urlValues.Encode()))
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	// Only 500 errors will not respond a readable result
-	if resp.StatusCode >= http.StatusInternalServerError {
-		return nil, ErrHTTPPushover
-	}
-
-	// Decode the JSON response
-	var response *RecipientDetails
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	var response RecipientDetails
+	if err := do(req, &response, false); err != nil {
 		return nil, err
 	}
 
-	// Check response status
-	if response.Status != 1 {
-		return nil, ErrInvalidRecipient
-	}
-
-	return response, nil
-}
-
-// postForm is a generic post function. It checks the response from pushover
-// and retrieve headers if the returnHeaders argument is set to "true"
-func (p *Pushover) postForm(url string, params map[string]string, returnHeaders bool) (*Response, error) {
-	body := &bytes.Buffer{}
-
-	// Write the body as multipart form data
-	w := multipart.NewWriter(body)
-
-	// Handle file upload
-	filePath, ok := params["attachment_path"]
-	if ok {
-		// Remove the path from the params
-		delete(params, "attachment_path")
-
-		file, err := os.Open(filePath)
-		if err != nil {
-			return nil, err
-		}
-		defer file.Close()
-
-		// Write the file in the body
-		fw, err := w.CreateFormFile("attachment", "poster")
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = io.Copy(fw, file)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Handle params
-	for k, v := range params {
-		if err := w.WriteField(k, v); err != nil {
-			return nil, err
-		}
-	}
-	if err := w.Close(); err != nil {
-		return nil, err
-	}
-
-	// Send request
-	resp, err := http.Post(url, w.FormDataContentType(), body)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	// Only 500 errors will not respond a readable result
-	if resp.StatusCode >= http.StatusInternalServerError {
-		return nil, ErrHTTPPushover
-	}
-
-	// Decode the JSON response
-	var response *Response
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, err
-	}
-
-	// Check response status
-	if response.Status != 1 {
-		return nil, response.Errors
-	}
-
-	// The headers are only returned when posting a new notification
-	if returnHeaders {
-		// Get app limits from headers
-		appLimits, err := newLimit(resp.Header)
-		if err != nil {
-			return nil, err
-		}
-		response.Limit = appLimits
-	}
-
-	return response, nil
+	return &response, nil
 }
 
 // CancelEmergencyNotification helps stop a notification retry in case of a
@@ -317,6 +231,20 @@ func (p *Pushover) postForm(url string, params map[string]string, returnHeaders 
 func (p *Pushover) CancelEmergencyNotification(receipt string) (*Response, error) {
 	endpoint := fmt.Sprintf("%s/receipts/%s/cancel.json", APIEndpoint, receipt)
 
-	// Post and do not check headers
-	return p.postForm(endpoint, map[string]string{"token": p.token}, false)
+	// Send request
+	urlValues := url.Values{}
+	urlValues.Add("token", p.token)
+
+	req, err := http.NewRequest("GET", endpoint, strings.NewReader(urlValues.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	response := &Response{}
+	if err := do(req, response, false); err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }
