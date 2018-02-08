@@ -73,6 +73,23 @@ message := &pushover.Message{
 }
 ```
 
+### Send a message with an attachment
+
+You can send an image attachment along with the message.
+
+```go
+file, err := os.Open("/some/image.png")
+if err != nil {
+  panic(err)
+}
+defer file.Close()
+
+message := pushover.NewMessage("Hello !")
+if err := message.AddAttachment(file); err != nil {
+  panic(err)
+}
+```
+
 ## Callbacks and receipts
 
 If you're using an emergency notification you'll have to specify a retry period and an expiration delay. You can get the receipt details using the token in the message response.
