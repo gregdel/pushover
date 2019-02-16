@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+	"unicode/utf8"
 )
 
 var deviceNameRegexp *regexp.Regexp
@@ -64,22 +65,22 @@ func (m *Message) validate() error {
 	}
 
 	// Validate message length
-	if len(m.Message) > MessageMaxLength {
+	if utf8.RuneCountInString(m.Message) > MessageMaxLength {
 		return ErrMessageTooLong
 	}
 
 	// Validate Title field length
-	if len(m.Title) > MessageTitleMaxLength {
+	if utf8.RuneCountInString(m.Title) > MessageTitleMaxLength {
 		return ErrMessageTitleTooLong
 	}
 
 	// Validate URL field
-	if len(m.URL) > MessageURLMaxLength {
+	if utf8.RuneCountInString(m.URL) > MessageURLMaxLength {
 		return ErrMessageURLTooLong
 	}
 
 	// Validate URL title field
-	if len(m.URLTitle) > MessageURLTitleMaxLength {
+	if utf8.RuneCountInString(m.URLTitle) > MessageURLTitleMaxLength {
 		return ErrMessageURLTitleTooLong
 	}
 
