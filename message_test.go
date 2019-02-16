@@ -2,34 +2,23 @@ package pushover
 
 import (
 	"bytes"
-	"crypto/rand"
-	"encoding/hex"
-	"log"
+	"fmt"
+	"math/rand"
 	"reflect"
 	"testing"
 	"time"
+	"unicode/utf8"
 )
 
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ😊😂😉😎🎶🐱‍👓")
+
 // Returns a random string with a fixed size
-func getRandomString(size int) (string, error) {
-	bytesSize := size
-	if size%2 == 1 {
-		// If the number of bytes is not pair add 1 so it's pair again, the
-		// extra char will be removed at the end
-		bytesSize++
+func getRandomString(size int) string {
+	b := make([]rune, size)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
-	bytesSize = (bytesSize / 2)
-
-	// Create a random byte array reading from /dev/urandom
-	b := make([]byte, bytesSize)
-
-	// Read
-	_, err := rand.Read(b)
-	if err != nil {
-		return "", err
-	}
-
-	return hex.EncodeToString(b)[:size], nil
+	return string(b)
 }
 
 func TestMessageValidation(t *testing.T) {
@@ -45,10 +34,9 @@ func TestMessageValidation(t *testing.T) {
 		MessageURLTitleMaxLength,
 		MessageURLTitleMaxLength + 1,
 	} {
-		rands, err := getRandomString(size)
-		if err != nil {
-			log.Fatalf("failed to create a random string of size %d", size)
-		}
+		rands := getRandomString(size)
+		t := utf8.RuneCountInString(rands)
+		fmt.Println(t)
 		randomStringsWithSize[size] = rands
 	}
 
