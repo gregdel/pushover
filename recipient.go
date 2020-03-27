@@ -26,7 +26,7 @@ func (r *Recipient) validate() error {
 	}
 
 	// Check invalid token
-	if recipientRegexp.MatchString(r.token) == false {
+	if !recipientRegexp.MatchString(r.token) {
 		return ErrInvalidRecipientToken
 	}
 	return nil

@@ -38,7 +38,7 @@ func (i *intBool) UnmarshalJSON(data []byte) error {
 	case 1:
 		*i = true
 	default:
-		return fmt.Errorf("Failed to unmarshal int to bool")
+		return fmt.Errorf("failed to unmarshal int to bool")
 	}
 
 	return nil
