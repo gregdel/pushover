@@ -1,7 +1,6 @@
 package pushover
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -12,7 +11,7 @@ type Errors []string
 func (e Errors) Error() string {
 	ret := ""
 	if len(e) > 0 {
-		ret = fmt.Sprintf("Errors:\n")
+		ret = "Errors:\n"
 		ret += strings.Join(e, "\n")
 	}
 	return ret

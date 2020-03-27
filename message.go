@@ -103,7 +103,7 @@ func (m *Message) validate() error {
 
 	// Test device name
 	if m.DeviceName != "" {
-		if deviceNameRegexp.MatchString(m.DeviceName) == false {
+		if !deviceNameRegexp.MatchString(m.DeviceName) {
 			return ErrInvalidDeviceName
 		}
 	}

@@ -109,7 +109,7 @@ func (p *Pushover) validate() error {
 	}
 
 	// Check invalid token
-	if tokenRegexp.MatchString(p.token) == false {
+	if !tokenRegexp.MatchString(p.token) {
 		return ErrInvalidToken
 	}
 	return nil
