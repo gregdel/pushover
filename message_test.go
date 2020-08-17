@@ -213,8 +213,8 @@ func TestNewMessageWithTitle(t *testing.T) {
 	}
 }
 
-// TestMutlipartRequest
-func TestMutlipartRequest(t *testing.T) {
+// MultipartRequest
+func TestMultipartRequest(t *testing.T) {
 	tt := []struct {
 		name           string
 		attachmentSize int64
@@ -225,14 +225,14 @@ func TestMutlipartRequest(t *testing.T) {
 			attachmentSize: 16,
 		},
 		{
-			name:           "no attachement",
-			expectedErr:    ErrMissingAttachement,
+			name:           "no attachment",
+			expectedErr:    ErrMissingAttachment,
 			attachmentSize: 0,
 		},
 		{
-			name:           "no attachement",
-			expectedErr:    ErrMessageAttachementTooLarge,
-			attachmentSize: MessageMaxAttachementByte + 1,
+			name:           "no attachment",
+			expectedErr:    ErrMessageAttachmentTooLarge,
+			attachmentSize: MessageMaxAttachmentByte + 1,
 		},
 	}
 
@@ -242,8 +242,8 @@ func TestMutlipartRequest(t *testing.T) {
 
 			if tc.attachmentSize > 0 {
 				buf := make([]byte, tc.attachmentSize)
-				attachement := bytes.NewBuffer(buf)
-				message.AddAttachment(attachement)
+				attachment := bytes.NewBuffer(buf)
+				message.AddAttachment(attachment)
 			}
 
 			req, err := message.multipartRequest("pToken", "rToken", "url")

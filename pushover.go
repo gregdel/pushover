@@ -23,23 +23,23 @@ var APIEndpoint = "https://api.pushover.net/1"
 var (
 	ErrHTTPPushover               = errors.New("pushover: http error")
 	ErrEmptyToken                 = errors.New("pushover: empty API token")
-	ErrEmptyURL                   = errors.New("pushover: empty URL, URLTitle needs an URL")
-	ErrEmptyRecipientToken        = errors.New("pushover: empty recipient token")
-	ErrInvalidRecipientToken      = errors.New("pushover: invalid recipient token")
-	ErrInvalidRecipient           = errors.New("pushover: invalid recipient")
-	ErrInvalidHeaders             = errors.New("pushover: invalid headers in server response")
-	ErrInvalidPriority            = errors.New("pushover: invalid priority")
-	ErrInvalidToken               = errors.New("pushover: invalid API token")
-	ErrMessageEmpty               = errors.New("pushover: message empty")
-	ErrMessageTitleTooLong        = errors.New("pushover: message title too long")
-	ErrMessageTooLong             = errors.New("pushover: message too long")
-	ErrMessageAttachementTooLarge = errors.New("pushover: message attachement is too large")
-	ErrMessageURLTitleTooLong     = errors.New("pushover: message URL title too long")
-	ErrMessageURLTooLong          = errors.New("pushover: message URL too long")
-	ErrMissingAttachement         = errors.New("pushover: missing attachement")
-	ErrMissingEmergencyParameter  = errors.New("pushover: missing emergency parameter")
-	ErrInvalidDeviceName          = errors.New("pushover: invalid device name")
-	ErrEmptyReceipt               = errors.New("pushover: empty receipt")
+	ErrEmptyURL                  = errors.New("pushover: empty URL, URLTitle needs an URL")
+	ErrEmptyRecipientToken       = errors.New("pushover: empty recipient token")
+	ErrInvalidRecipientToken     = errors.New("pushover: invalid recipient token")
+	ErrInvalidRecipient          = errors.New("pushover: invalid recipient")
+	ErrInvalidHeaders            = errors.New("pushover: invalid headers in server response")
+	ErrInvalidPriority           = errors.New("pushover: invalid priority")
+	ErrInvalidToken              = errors.New("pushover: invalid API token")
+	ErrMessageEmpty              = errors.New("pushover: message empty")
+	ErrMessageTitleTooLong       = errors.New("pushover: message title too long")
+	ErrMessageTooLong            = errors.New("pushover: message too long")
+	ErrMessageAttachmentTooLarge = errors.New("pushover: message attachment is too large")
+	ErrMessageURLTitleTooLong    = errors.New("pushover: message URL title too long")
+	ErrMessageURLTooLong         = errors.New("pushover: message URL too long")
+	ErrMissingAttachment         = errors.New("pushover: missing attachment")
+	ErrMissingEmergencyParameter = errors.New("pushover: missing emergency parameter")
+	ErrInvalidDeviceName         = errors.New("pushover: invalid device name")
+	ErrEmptyReceipt              = errors.New("pushover: empty receipt")
 )
 
 // API limitations.
@@ -52,8 +52,8 @@ const (
 	MessageURLMaxLength = 512
 	// MessageURLTitleMaxLength is the max URL title number of characters.
 	MessageURLTitleMaxLength = 100
-	// MessageMaxAttachementByte is the max attachement size in byte.
-	MessageMaxAttachementByte = 2621440
+	// MessageMaxAttachmentByte is the max attachment size in byte.
+	MessageMaxAttachmentByte = 2621440
 )
 
 // Message priorities
