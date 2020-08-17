@@ -191,7 +191,7 @@ func (m *Message) multipartRequest(pToken, rToken, url string) (*http.Request, e
 	body := &bytes.Buffer{}
 
 	if m.attachment == nil {
-		return nil, ErrMissingAttachement
+		return nil, ErrMissingAttachment
 	}
 
 	// Write the body as multipart form data
@@ -208,8 +208,8 @@ func (m *Message) multipartRequest(pToken, rToken, url string) (*http.Request, e
 		return nil, err
 	}
 
-	if written > MessageMaxAttachementByte {
-		return nil, ErrMessageAttachementTooLarge
+	if written > MessageMaxAttachmentByte {
+		return nil, ErrMessageAttachmentTooLarge
 	}
 
 	// Handle params
