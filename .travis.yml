@@ -1,6 +1,6 @@
 language: go
 go:
-- 1.14.2
+- 1.15.2
 before_install:
 - go get github.com/axw/gocov/gocov
 - go get github.com/mattn/goveralls
