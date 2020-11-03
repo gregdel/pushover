@@ -165,10 +165,10 @@ func (m *Message) send(pToken, rToken string) (*Response, error) {
 
 	var f func(string, string, string) (*http.Request, error)
 	if m.attachment == nil {
-		// Use a multipart request if a file should be sent
+		// Use a URL-encoded request if there's no need to attach files
 		f = m.urlEncodedRequest
 	} else {
-		// Use a url encoded request otherwise
+		// Use a multipart request if a file should be sent
 		f = m.multipartRequest
 	}
 
