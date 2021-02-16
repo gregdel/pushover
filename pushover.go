@@ -88,6 +88,7 @@ const (
 	SoundPersistent   = "persistent"
 	SoundEcho         = "echo"
 	SoundUpDown       = "updown"
+	SoundVibrate      = "vibrate"
 	SoundNone         = "none"
 )
 
