@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 	"unicode/utf8"
 )
@@ -103,8 +104,12 @@ func (m *Message) validate() error {
 
 	// Test device name
 	if m.DeviceName != "" {
-		if !deviceNameRegexp.MatchString(m.DeviceName) {
-			return ErrInvalidDeviceName
+		// Accept comma separated device names
+		devices := strings.Split(m.DeviceName, ",")
+		for _, d := range devices {
+			if !deviceNameRegexp.MatchString(d) {
+				return ErrInvalidDeviceName
+			}
 		}
 	}
 
