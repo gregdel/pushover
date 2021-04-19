@@ -181,6 +181,8 @@ func TestMessageDeviceName(t *testing.T) {
 		{"good device name 1", "yo_mama", nil},
 		{"good device name 2", "droid-2", nil},
 		{"good device name 2", "fasdfafdadfasdfa", nil},
+		{"multiple devices", "device1,device2", nil},
+		{"invalid multiple devices", "device1,device^2", ErrInvalidDeviceName},
 		{"invalid device name 1", "yo&mama", ErrInvalidDeviceName},
 		{"invalid device name 2", "my^device", ErrInvalidDeviceName},
 		{"invalid device name 3", "d34342fasdfasdfasdfasdfasdfasd", ErrInvalidDeviceName},
