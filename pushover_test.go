@@ -53,6 +53,7 @@ func TestEncodeRequest(t *testing.T) {
 		CallbackURL: "http://yourapp.com/callback",
 		Sound:       SoundCosmic,
 		HTML:        true,
+		Monospace:   true,
 	}
 
 	// Expected arguments
@@ -71,6 +72,7 @@ func TestEncodeRequest(t *testing.T) {
 		"callback":  "http://yourapp.com/callback",
 		"sound":     "cosmic",
 		"html":      "1",
+		"monospace": "1",
 	}
 
 	// Encode request
