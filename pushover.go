@@ -21,8 +21,8 @@ var APIEndpoint = "https://api.pushover.net/1"
 
 // Pushover custom errors.
 var (
-	ErrHTTPPushover               = errors.New("pushover: http error")
-	ErrEmptyToken                 = errors.New("pushover: empty API token")
+	ErrHTTPPushover              = errors.New("pushover: http error")
+	ErrEmptyToken                = errors.New("pushover: empty API token")
 	ErrEmptyURL                  = errors.New("pushover: empty URL, URLTitle needs an URL")
 	ErrEmptyRecipientToken       = errors.New("pushover: empty recipient token")
 	ErrInvalidRecipientToken     = errors.New("pushover: invalid recipient token")

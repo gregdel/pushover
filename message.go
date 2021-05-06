@@ -36,6 +36,7 @@ type Message struct {
 	DeviceName  string
 	Sound       string
 	HTML        bool
+	Monospace   bool
 
 	// attachment
 	attachment io.Reader
@@ -151,6 +152,10 @@ func (m *Message) toMap(pToken, rToken string) map[string]string {
 
 	if m.HTML {
 		ret["html"] = "1"
+	}
+
+	if m.Monospace {
+		ret["monospace"] = "1"
 	}
 
 	if m.Priority == PriorityEmergency {
