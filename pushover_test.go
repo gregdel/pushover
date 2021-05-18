@@ -144,8 +144,8 @@ func TestPostFormErrors(t *testing.T) {
 	}
 }
 
-// TestGetRecipienDetails
-func TestGetRecipienDetails(t *testing.T) {
+// TestGetRecipientDetails
+func TestGetRecipientDetails(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, `{"status":1,"request":"e460545a8b333d0da2f3602aff3133d6"}`)
 	}))
@@ -170,8 +170,8 @@ func TestGetRecipienDetails(t *testing.T) {
 	}
 }
 
-// TestGetRecipienDetailsError
-func TestGetRecipienDetailsError(t *testing.T) {
+// TestGetRecipientDetailsError
+func TestGetRecipientDetailsError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, `{"status":0,"request":"e460545a8b333d0da2f3602aff3133d6", "errors": ["user key is invalid"]}`)
 	}))
