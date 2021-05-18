@@ -26,7 +26,6 @@ var (
 	ErrEmptyURL                  = errors.New("pushover: empty URL, URLTitle needs an URL")
 	ErrEmptyRecipientToken       = errors.New("pushover: empty recipient token")
 	ErrInvalidRecipientToken     = errors.New("pushover: invalid recipient token")
-	ErrInvalidRecipient          = errors.New("pushover: invalid recipient")
 	ErrInvalidHeaders            = errors.New("pushover: invalid headers in server response")
 	ErrInvalidPriority           = errors.New("pushover: invalid priority")
 	ErrInvalidToken              = errors.New("pushover: invalid API token")
@@ -161,8 +160,9 @@ func (p *Pushover) GetReceiptDetails(receipt string) (*ReceiptDetails, error) {
 }
 
 // GetRecipientDetails allows to check if a recipient exists, if it's a group
-// and the devices associated to this recipient. It returns an
-// ErrInvalidRecipient if the recipient is not valid in the Pushover API.
+// and the devices associated to this recipient. The Errors field of the
+// RecipientDetails object will contain an error if the recipient is not valid
+// in the Pushover API.
 func (p *Pushover) GetRecipientDetails(recipient *Recipient) (*RecipientDetails, error) {
 	endpoint := fmt.Sprintf("%s/users/validate.json", APIEndpoint)
 
