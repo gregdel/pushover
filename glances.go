@@ -1,15 +1,24 @@
+// glances.go
+// see: https://pushover.net/api/glances
+
 package pushover
 
 import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 )
 
 const (
-	GlancesAllDevices              = ""
-	GlancesMessageMaxTitleLength   = 100
-	GlancesMessageMaxTextLength    = 100
+	// GlancesAllDevices can be passed as a device name to send a glances-message to all devices
+	GlancesAllDevices = ""
+	// GlancesMessageMaxTitleLength: The title can be maximum 100 characters long
+	GlancesMessageMaxTitleLength = 100
+	// GlancesMessageMaxTextLength: The text can be maximum 100 characters long
+	GlancesMessageMaxTextLength = 100
+	// GlancesMessageMaxSubtextLength: The subtext can be maximum 100 characters long
 	GlancesMessageMaxSubtextLength = 100
 )
 
@@ -30,7 +39,8 @@ type GlancesMessage struct {
 	// Count(can be negative): shown on smaller screens; useful for simple counts
 	Count int
 	// Percent(0-100): shown on some screens as a progress bar/circle
-	Percent int
+	Percent    int
+	DeviceName string
 }
 
 type GlancesResponse struct {
@@ -43,50 +53,65 @@ type GlancesResponse struct {
 	Errors Errors `json:"errors"`
 }
 
-func (p *Pushover) SendGlances(deviceName string, message *GlancesMessage, recipient *Recipient) (*GlancesResponse, error) {
+// SendGlancesMessage is used to send glances-message to a recipient.
+// It can be used to display widgets on a smart watch
+func (p *Pushover) SendGlancesMessage(msg *GlancesMessage, rec *Recipient) (*GlancesResponse, error) {
 	// Validate pushover
 	if err := p.validate(); err != nil {
 		return nil, err
 	}
 
-	// Validate recipient
-	if err := recipient.validate(); err != nil {
+	// Validate rec
+	if err := rec.validate(); err != nil {
 		return nil, err
 	}
 
-	// Validate message
-	if err := message.validate(); err != nil {
+	// Validate msg
+	if err := msg.validate(); err != nil {
 		return nil, err
 	}
 
-	return message.send(deviceName, p.token, recipient.token)
+	return msg.send(p.token, rec.token)
 }
 
 func (m *GlancesMessage) validate() error {
-	if len(m.Title) > GlancesMessageMaxTitleLength {
+	if utf8.RuneCountInString(m.Title) > GlancesMessageMaxTitleLength {
 		return ErrGlancesTitleTooLong
 	}
-	if len(m.Text) > GlancesMessageMaxTextLength {
+	if utf8.RuneCountInString(m.Text) > GlancesMessageMaxTextLength {
 		return ErrGlancesTextTooLong
 	}
-	if len(m.Subtext) > GlancesMessageMaxSubtextLength {
+	if utf8.RuneCountInString(m.Subtext) > GlancesMessageMaxSubtextLength {
 		return ErrGlancesSubtextTooLong
 	}
 	if m.Percent < 0 || m.Percent > 100 {
 		return ErrGlancesInvalidPercent
 	}
+	// Test device name
+	if m.DeviceName != "" {
+		// Accept comma separated device names
+		devices := strings.Split(m.DeviceName, ",")
+		for _, d := range devices {
+			if !deviceNameRegexp.MatchString(d) {
+				return ErrInvalidDeviceName
+			}
+		}
+	}
 	return nil
 }
 
-func (m *GlancesMessage) send(deviceName string, pToken, rToken string) (*GlancesResponse, error) {
+// send sends the message using the pushover and the recipient tokens.
+func (m *GlancesMessage) send(pToken, rToken string) (*GlancesResponse, error) {
 	url := fmt.Sprintf("%s/glances.json", APIEndpoint)
 
 	params := map[string]string{
 		"token":   pToken,
 		"user":    rToken,
-		"device":  deviceName,
 		"count":   strconv.Itoa(m.Count),
 		"percent": strconv.Itoa(m.Percent),
+	}
+	if m.DeviceName != "" {
+		params["device"] = m.DeviceName
 	}
 	if m.Title != "" {
 		params["title"] = m.Title
