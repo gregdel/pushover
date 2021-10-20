@@ -21,33 +21,41 @@ const (
 // Glance represents a pushover glances update request.
 type Glance struct {
 	// Title(max 100): a description of the data being shown, such as "Widgets Sold"
-	Title string
+	Title *string
 	// Text(max 100): the main line of data, used on most screens
-	Text string
+	Text *string
 	// Subtext(max 100): a second line of data
-	Subtext string
+	Subtext *string
 	// Count(can be negative): shown on smaller screens; useful for simple counts
-	Count int
+	Count *int
 	// Percent(0-100): shown on some screens as a progress bar/circle
-	Percent    int
+	Percent    *int
 	DeviceName string
+}
+
+func IntP(i int) *int {
+	return &i
+}
+
+func StrP(s string) *string {
+	return &s
 }
 
 func (m *Glance) validate() error {
 	// check if data is present
-	if m.Title == "" && m.Text == "" && m.Subtext == "" && m.Count == 0 && m.Percent == 0 {
+	if m.Title == nil && m.Text == nil && m.Subtext == nil && m.Count == nil && m.Percent == nil {
 		return ErrGlancesMissingData
 	}
-	if utf8.RuneCountInString(m.Title) > GlancesMessageMaxTitleLength {
+	if m.Title != nil && utf8.RuneCountInString(*m.Title) > GlancesMessageMaxTitleLength {
 		return ErrGlancesTitleTooLong
 	}
-	if utf8.RuneCountInString(m.Text) > GlancesMessageMaxTextLength {
+	if m.Text != nil && utf8.RuneCountInString(*m.Text) > GlancesMessageMaxTextLength {
 		return ErrGlancesTextTooLong
 	}
-	if utf8.RuneCountInString(m.Subtext) > GlancesMessageMaxSubtextLength {
+	if m.Subtext != nil && utf8.RuneCountInString(*m.Subtext) > GlancesMessageMaxSubtextLength {
 		return ErrGlancesSubtextTooLong
 	}
-	if m.Percent < 0 || m.Percent > 100 {
+	if m.Percent != nil && (*m.Percent < 0 || *m.Percent > 100) {
 		return ErrGlancesInvalidPercent
 	}
 	// Test device name
@@ -68,22 +76,28 @@ func (m *Glance) send(pToken, rToken string) (*Response, error) {
 	url := fmt.Sprintf("%s/glances.json", APIEndpoint)
 
 	params := map[string]string{
-		"token":   pToken,
-		"user":    rToken,
-		"count":   strconv.Itoa(m.Count),
-		"percent": strconv.Itoa(m.Percent),
+		"token": pToken,
+		"user":  rToken,
 	}
 	if m.DeviceName != "" {
 		params["device"] = m.DeviceName
 	}
-	if m.Title != "" {
-		params["title"] = m.Title
+
+	// data
+	if m.Count != nil {
+		params["count"] = strconv.Itoa(*m.Count)
 	}
-	if m.Text != "" {
-		params["text"] = m.Text
+	if m.Percent != nil {
+		params["percent"] = strconv.Itoa(*m.Percent)
 	}
-	if m.Subtext != "" {
-		params["subtext"] = m.Subtext
+	if m.Title != nil {
+		params["title"] = *m.Title
+	}
+	if m.Text != nil {
+		params["text"] = *m.Text
+	}
+	if m.Subtext != nil {
+		params["subtext"] = *m.Subtext
 	}
 
 	req, err := newURLEncodedRequest("POST", url, params)

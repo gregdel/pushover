@@ -13,53 +13,53 @@ func TestGlancesValidation(t *testing.T) {
 		{
 			name: "valid message 1",
 			fields: &Glance{
-				Title:   "Hello World!",
-				Text:    "Hi!",
-				Subtext: "Hello!",
-				Count:   10,
-				Percent: 15,
+				Title:   StrP("Hello World!"),
+				Text:    StrP("Hi!"),
+				Subtext: StrP("Hello!"),
+				Count:   IntP(10),
+				Percent: IntP(15),
 			},
 			expectedErr: nil,
 		},
 		{
 			name: "valid message 2",
 			fields: &Glance{
-				Title: "quam nulla porttitor massa id",
+				Title: StrP("quam nulla porttitor massa id"),
 			},
 			expectedErr: nil,
 		},
 		{
 			name: "invalid message (long title)",
 			fields: &Glance{
-				Title: "facilisi etiam dignissim diam quis enim lobortis scelerisque fermentum dui faucibus in ornare quam viverra",
+				Title: StrP("facilisi etiam dignissim diam quis enim lobortis scelerisque fermentum dui faucibus in ornare quam viverra"),
 			},
 			expectedErr: ErrGlancesTitleTooLong,
 		},
 		{
 			name: "invalid message (long text)",
 			fields: &Glance{
-				Text: "facilisi etiam dignissim diam quis enim lobortis scelerisque fermentum dui faucibus in ornare quam viverra",
+				Text: StrP("facilisi etiam dignissim diam quis enim lobortis scelerisque fermentum dui faucibus in ornare quam viverra"),
 			},
 			expectedErr: ErrGlancesTextTooLong,
 		},
 		{
 			name: "invalid message (long subtext)",
 			fields: &Glance{
-				Subtext: "facilisi etiam dignissim diam quis enim lobortis scelerisque fermentum dui faucibus in ornare quam viverra",
+				Subtext: StrP("facilisi etiam dignissim diam quis enim lobortis scelerisque fermentum dui faucibus in ornare quam viverra"),
 			},
 			expectedErr: ErrGlancesSubtextTooLong,
 		},
 		{
 			name: "invalid message (percentage)",
 			fields: &Glance{
-				Percent: 101,
+				Percent: IntP(101),
 			},
 			expectedErr: ErrGlancesInvalidPercent,
 		},
 		{
 			name: "invalid device",
 			fields: &Glance{
-				Title:      "hi!",
+				Title:      StrP("hi!"),
 				DeviceName: "device!test",
 			},
 			expectedErr: ErrInvalidDeviceName,
