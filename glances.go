@@ -33,11 +33,11 @@ type Glance struct {
 	DeviceName string
 }
 
-func IntP(i int) *int {
+func Int(i int) *int {
 	return &i
 }
 
-func StrP(s string) *string {
+func String(s string) *string {
 	return &s
 }
 

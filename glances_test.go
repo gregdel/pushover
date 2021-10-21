@@ -13,53 +13,53 @@ func TestGlancesValidation(t *testing.T) {
 		{
 			name: "valid message 1",
 			fields: &Glance{
-				Title:   StrP("Hello World!"),
-				Text:    StrP("Hi!"),
-				Subtext: StrP("Hello!"),
-				Count:   IntP(10),
-				Percent: IntP(15),
+				Title:   String("Hello World!"),
+				Text:    String("Hi!"),
+				Subtext: String("Hello!"),
+				Count:   Int(10),
+				Percent: Int(15),
 			},
 			expectedErr: nil,
 		},
 		{
 			name: "valid message 2",
 			fields: &Glance{
-				Title: StrP("quam nulla porttitor massa id"),
+				Title: String("quam nulla porttitor massa id"),
 			},
 			expectedErr: nil,
 		},
 		{
 			name: "invalid message (long title)",
 			fields: &Glance{
-				Title: StrP("facilisi etiam dignissim diam quis enim lobortis scelerisque fermentum dui faucibus in ornare quam viverra"),
+				Title: String("facilisi etiam dignissim diam quis enim lobortis scelerisque fermentum dui faucibus in ornare quam viverra"),
 			},
 			expectedErr: ErrGlancesTitleTooLong,
 		},
 		{
 			name: "invalid message (long text)",
 			fields: &Glance{
-				Text: StrP("facilisi etiam dignissim diam quis enim lobortis scelerisque fermentum dui faucibus in ornare quam viverra"),
+				Text: String("facilisi etiam dignissim diam quis enim lobortis scelerisque fermentum dui faucibus in ornare quam viverra"),
 			},
 			expectedErr: ErrGlancesTextTooLong,
 		},
 		{
 			name: "invalid message (long subtext)",
 			fields: &Glance{
-				Subtext: StrP("facilisi etiam dignissim diam quis enim lobortis scelerisque fermentum dui faucibus in ornare quam viverra"),
+				Subtext: String("facilisi etiam dignissim diam quis enim lobortis scelerisque fermentum dui faucibus in ornare quam viverra"),
 			},
 			expectedErr: ErrGlancesSubtextTooLong,
 		},
 		{
 			name: "invalid message (percentage)",
 			fields: &Glance{
-				Percent: IntP(101),
+				Percent: Int(101),
 			},
 			expectedErr: ErrGlancesInvalidPercent,
 		},
 		{
 			name: "invalid device",
 			fields: &Glance{
-				Title:      StrP("hi!"),
+				Title:      String("hi!"),
 				DeviceName: "device!test",
 			},
 			expectedErr: ErrInvalidDeviceName,
