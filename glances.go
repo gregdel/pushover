@@ -33,10 +33,14 @@ type Glance struct {
 	DeviceName string
 }
 
+// Int returns the pointer of the input i
+// Used to check for the Glance API if a parameter was left empty or if none was specified
 func Int(i int) *int {
 	return &i
 }
 
+// String returns the pointer of the input s
+// Used to check for the Glance API if a parameter was left empty or if none was specified
 func String(s string) *string {
 	return &s
 }
