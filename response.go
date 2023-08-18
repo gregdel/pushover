@@ -13,7 +13,8 @@ type Response struct {
 
 // String represents a printable form of the response.
 func (r Response) String() string {
-	ret := fmt.Sprintf("Request id: %s\n", r.ID)
+	ret := fmt.Sprintf("Status: %d\n", r.Status)
+	ret += fmt.Sprintf("Request id: %s\n", r.ID)
 	if r.Receipt != "" {
 		ret += fmt.Sprintf("Receipt: %s\n", r.Receipt)
 	}
