@@ -37,6 +37,7 @@ type Message struct {
 	Sound       string
 	HTML        bool
 	Monospace   bool
+	TTL         time.Duration
 
 	// attachment
 	attachment io.Reader
@@ -164,6 +165,10 @@ func (m *Message) toMap(pToken, rToken string) map[string]string {
 		if m.CallbackURL != "" {
 			ret["callback"] = m.CallbackURL
 		}
+	}
+
+	if m.TTL != 0 {
+		ret["ttl"] = strconv.FormatFloat(m.TTL.Seconds(), 'f', -1, 64)
 	}
 
 	return ret
