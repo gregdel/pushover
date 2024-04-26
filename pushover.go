@@ -222,7 +222,7 @@ func (p *Pushover) GetRecipientDetails(recipient *Recipient) (*RecipientDetails,
 func (p *Pushover) CancelEmergencyNotification(receipt string) (*Response, error) {
 	endpoint := fmt.Sprintf("%s/receipts/%s/cancel.json", APIEndpoint, receipt)
 
-	req, err := newURLEncodedRequest("GET", endpoint, map[string]string{"token": p.token})
+	req, err := newURLEncodedRequest("POST", endpoint, map[string]string{"token": p.token})
 	if err != nil {
 		return nil, err
 	}
