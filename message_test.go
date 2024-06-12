@@ -245,7 +245,10 @@ func TestMultipartRequest(t *testing.T) {
 			if tc.attachmentSize > 0 {
 				buf := make([]byte, tc.attachmentSize)
 				attachment := bytes.NewBuffer(buf)
-				message.AddAttachment(attachment)
+				err := message.AddAttachment(attachment)
+				if err != nil {
+					t.Fatalf("unexpected error: %s", err.Error())
+				}
 			}
 
 			req, err := message.multipartRequest("pToken", "rToken", "url")
