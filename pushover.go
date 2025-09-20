@@ -234,3 +234,211 @@ func (p *Pushover) CancelEmergencyNotification(receipt string) (*Response, error
 
 	return response, nil
 }
+
+// CreateGroup creates a new pushover group with the given name. The Group ID is returned as Response.Group.
+// ref: https://pushover.net/api/groups#create
+func (p *Pushover) CreateGroup(name string) (*Response, error) {
+	endpoint := fmt.Sprintf("%s/groups.json", APIEndpoint)
+
+	req, err := newURLEncodedRequest("POST", endpoint, map[string]string{
+		"token": p.token,
+		"name":  name,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	response := &Response{}
+	if err := do(req, response, false); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+// ListGroups retrieves a list of groups.
+// ref: https://pushover.net/api/groups#list
+func (p *Pushover) ListGroups() (*GroupsListResponse, error) {
+	url := fmt.Sprintf("%s/groups.json?token=%s", APIEndpoint, p.token)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	var groups *GroupsListResponse
+
+	if err = json.NewDecoder(resp.Body).Decode(&groups); err != nil {
+		return nil, err
+	}
+
+	return groups, nil
+}
+
+// GetGroup retrieves information about a given groupKey.
+// ref: https://pushover.net/api/groups#show
+func (p *Pushover) GetGroup(groupKey string) (*GroupDetailsResponse, error) {
+	url := fmt.Sprintf("%s/groups/%s.json?token=%s", APIEndpoint, groupKey, p.token)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	var groups *GroupDetailsResponse
+
+	if err = json.NewDecoder(resp.Body).Decode(&groups); err != nil {
+		return nil, err
+	}
+
+	return groups, nil
+}
+
+// AddUserToGroup adds a user with userKey to the group with groupKey.
+// If device or memo are provided, they are associated with the subscription.
+// ref:  https://pushover.net/api/groups#add_user
+func (p *Pushover) AddUserToGroup(groupKey, userKey string, device string, memo string) (*Response, error) {
+	endpoint := fmt.Sprintf("%s/groups/%s/add_user.json", APIEndpoint, groupKey)
+
+	params := map[string]string{
+		"token": p.token,
+		"user":  userKey,
+	}
+
+	if device != "" {
+		params["device"] = device
+	}
+
+	if memo != "" {
+		params["memo"] = memo
+	}
+
+	req, err := newURLEncodedRequest("POST", endpoint, params)
+
+	if err != nil {
+		return nil, err
+	}
+
+	response := &Response{}
+	if err := do(req, response, false); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+// RemoveUserFromGroup removes a user with userKey from the group with groupKey.
+// If device is provided, only the given device is removed from the group.
+// ref: https://pushover.net/api/groups#remove_user
+func (p *Pushover) RemoveUserFromGroup(groupKey, userKey string, device string) (*Response, error) {
+	endpoint := fmt.Sprintf("%s/groups/%s/remove_user.json", APIEndpoint, groupKey)
+
+	params := map[string]string{
+		"token": p.token,
+		"user":  userKey,
+	}
+
+	if device != "" {
+		params["device"] = device
+	}
+
+	req, err := newURLEncodedRequest("POST", endpoint, params)
+
+	if err != nil {
+		return nil, err
+	}
+
+	response := &Response{}
+	if err := do(req, response, false); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+// DisableUserInGroup disables a user with userKey in the group with groupKey.
+// If device is provided, only the given device is disabled in the group.
+// ref: https://pushover.net/api/groups#disable_user
+func (p *Pushover) DisableUserInGroup(groupKey, userKey string, device string) (*Response, error) {
+	endpoint := fmt.Sprintf("%s/groups/%s/disable_user.json", APIEndpoint, groupKey)
+
+	params := map[string]string{
+		"token": p.token,
+		"user":  userKey,
+	}
+
+	if device != "" {
+		params["device"] = device
+	}
+
+	req, err := newURLEncodedRequest("POST", endpoint, params)
+
+	if err != nil {
+		return nil, err
+	}
+
+	response := &Response{}
+	if err := do(req, response, false); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+// EnableUserInGroup enables a user with userKey in the group with groupKey.
+// If device is provided, only the given device is enabled in the group.
+// ref: https://pushover.net/api/groups#enable_user
+func (p *Pushover) EnableUserInGroup(groupKey, userKey string, device string) (*Response, error) {
+	endpoint := fmt.Sprintf("%s/groups/%s/enable_user.json", APIEndpoint, groupKey)
+
+	params := map[string]string{
+		"token": p.token,
+		"user":  userKey,
+	}
+
+	if device != "" {
+		params["device"] = device
+	}
+
+	req, err := newURLEncodedRequest("POST", endpoint, params)
+
+	if err != nil {
+		return nil, err
+	}
+
+	response := &Response{}
+	if err := do(req, response, false); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+// RenameGroup renames the group with groupKey to the provided name.
+// ref: https://pushover.net/api/groups#rename
+func (p *Pushover) RenameGroup(groupKey string, name string) (*Response, error) {
+	endpoint := fmt.Sprintf("%s/groups/%s/rename.json", APIEndpoint, groupKey)
+
+	params := map[string]string{
+		"token": p.token,
+		"name":  name,
+	}
+
+	req, err := newURLEncodedRequest("POST", endpoint, params)
+
+	if err != nil {
+		return nil, err
+	}
+
+	response := &Response{}
+	if err := do(req, response, false); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}

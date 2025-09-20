@@ -8,12 +8,13 @@ func init() {
 	recipientRegexp = regexp.MustCompile(`^[A-Za-z0-9]{30}$`)
 }
 
-// Recipient represents the a recipient to notify.
+// Recipient represents a recipient to notify.
 type Recipient struct {
 	token string
 }
 
 // NewRecipient is the representation of the recipient to notify.
+// A recipient may be a Group ID.
 func NewRecipient(token string) *Recipient {
 	return &Recipient{token}
 }
